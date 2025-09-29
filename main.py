@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.exceptions import HTTPException
 from bson import ObjectId
 import random
 import uuid
@@ -23,11 +24,22 @@ def index():
     return {"Project": "Naija Nutri Hub"}
 
 # Create new user
-@app.post("/create-user", tags=["Authentication"])
-def create_user():
+@app.post("/sign-up", tags=["Authentication"])
+def create_user(user_data: UserCreate):
   return
 
-# Update user information
-@app.put("/update-user/{user_id}", tags=["Authentication"])
-def update_user():
-  return
+@app.post("/verify", tags=["Authentication"])
+def verify_user_account(otp_data: OTPVerifyRequest):
+    return
+
+@app.post("/resend_otp", tags=["Authentication"])
+def resend_otp(email: str):
+    return
+    
+@app.post("/login", tags=["Authentication"])
+def login_user(user: LoginRequest):
+    return
+
+@app.post("/reset_password", tags=["authentication"])
+def reset_password(user: ResetPasswordRequest):
+    return
