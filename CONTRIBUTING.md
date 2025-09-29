@@ -94,3 +94,11 @@ Welcome to the **Naija Nutri Hub** project repository for ML/AI Engineering and 
 2. [Fundamentals of Azure OpenAI Service](https://learn.microsoft.com/en-us/training/modules/explore-azure-openai/?wt.mc_id=studentamb_217190)
 3. [Azure OpenAI Models: Deployment](https://learn.microsoft.com/azure/ai-services/openai/how-to/working-with-models?tabs=powershell?wt.mc_id=studentamb_217190)
 4. [Develop Generative AI solutions with Azure OpenAI Service](https://learn.microsoft.com/en-us/training/paths/develop-ai-solutions-azure-openai/?wt.mc_id=studentamb_217190)
+5. [Azure Custom Vision Documentation](https://learn.microsoft.com/en-us/azure/ai-services/custom-vision-service/quickstarts/image-classification?tabs=windows%2Cvisual-studio&pivots=programming-language-python).
+6. [Azure Custom Vision Video Tutorial](https://www.youtube.com/watch?v=PSHZJC1VvvI)
+7. [FastAPI Docs](https://fastapi.tiangolo.com/tutorial/)
+
+## 📊 Datasets/APIs
+1. [Nigerian Food Dataset - Images (Kaggle)](https://www.kaggle.com/datasets/elinteerie/nigeria-food-ai-dataset/data)
+2. [Nigerian Food Description Dataset (Kaggle)](https://www.kaggle.com/datasets/franklycypher/nigerian-foods)
+3. [The MealDB](https://www.themealdb.com/) - provides API access to recipes and ingredients that could power the recipe feature of the solution. 
