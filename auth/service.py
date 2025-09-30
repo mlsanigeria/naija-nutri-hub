@@ -7,7 +7,7 @@ import string
 
 def user_serializer(user: dict):
     """
-    Extract firstname, lastname, email and username from user create model
+    Extract details from user create model (withough default document id by MongoDB)
     """
   
     return
