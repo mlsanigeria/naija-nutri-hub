@@ -2,6 +2,20 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.exceptions import HTTPException
 from bson import ObjectId
+
+# Authentication
+from auth.mail import send_email_otp
+from auth.service import (create_user, generate_otp, get_user_via_email,
+                          get_user_via_username, user_exists_email,
+                          user_exists_username, user_serializer)
+
+from auth.utils import hash_password, verify_password
+
+# Schema/Database
+from schemas.schema import (LoginRequest, OTPModel, OTPVerifyRequest,
+                            ResetPasswordRequest, UserCreate)
+from config.database import otp_record, user_auth
+
 import random
 import uuid
 
