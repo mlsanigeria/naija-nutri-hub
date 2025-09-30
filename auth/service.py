@@ -13,17 +13,17 @@ def user_serializer(user: dict):
     return
 
 def get_user_via_email(email: str):
-    return
+    return user_serializer(...)
 
 
 def get_user_via_username(username: str):
+    return user_serializer(...)
+
+def user_exists_email(email: str) -> bool:
     return
 
-def user_exists_email(email: str):
-    return
 
-
-def user_exists_username(username: str):
+def user_exists_username(username: str) -> bool:
     return
 
 
