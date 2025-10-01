@@ -39,8 +39,38 @@ def index():
 
 # Create new user
 @app.post("/sign-up", tags=["Authentication"])
-def create_user(user_data: UserCreate):
-  return
+def sign_up(user_data: UserCreate):
+    """
+    Create a new user account
+    
+    Args:
+        user_data (UserCreate): User registration data
+        
+    Returns:
+        dict: Success message and user data (without password)
+        
+    Raises:
+        HTTPException: If user already exists or validation fails
+    """
+    try:
+        # Create user using the service function
+        created_user = create_user(user_data)
+        
+        return {
+            "message": "User created successfully",
+            "user": created_user,
+            "status": "success"
+        }
+        
+    except HTTPException:
+        # Re-raise HTTP exceptions (like duplicate email/username)
+        raise
+    except Exception as e:
+        # Handle unexpected errors
+        raise HTTPException(
+            status_code=500,
+            detail=f"Internal server error: {str(e)}"
+        )
 
 @app.post("/verify", tags=["Authentication"])
 def verify_user_account(otp_data: OTPVerifyRequest):
