@@ -1,6 +1,3 @@
-## MLSA Nigeria x Hacktoberfest2024 Challenge Support Group
-Join our WhatsApp community to stay updated and connect with fellow contributors/participants via this [link](https://chat.whatsapp.com/KugDBdF7BaFEqYafwm0qLB).
-
 ## School WhatsApp Communities
 Here are WhatsApp communities specific to different universities. Join the one associated with your university to engage with your peers from the same institution:
 
