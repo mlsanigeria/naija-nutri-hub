@@ -1,9 +1,13 @@
-from config.database import user_auth
+from config.database import user_auth,otp_record
 from schemas.schema import User, UserCreate
 from datetime import datetime
 from .utils import hash_password
 import random
 import string
+from fastapi import HTTPException
+from datetime import datetime, timedelta, timezone
+from .mail import send_email_otp
+
 
 def user_serializer(user: dict):
     """
@@ -34,3 +38,38 @@ def create_user(user: UserCreate):
 def generate_otp(length: int = 4) -> str:
     """Generate a random numeric OTP of given length."""
     return
+
+def resend_otp_service(email: str):
+    now = datetime.now(timezone.utc)
+
+    user = user_auth.find_one({"email": email})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    last_otp = otp_record.find_one({"email": email}, sort=[("created_at", -1)])
+    if last_otp:
+        created_at = last_otp["created_at"]
+        if created_at.tzinfo is None:
+            created_at = created_at.replace(tzinfo=timezone.utc)
+        if (now - created_at) < timedelta(seconds=60):
+            raise HTTPException(status_code=429, detail="Please wait before requesting another OTP")
+
+    otp_record.delete_many({"email": email})
+
+    otp_code = str(random.randint(100000, 999999))
+    otp_data = {
+        "email": email,
+        "otp": otp_code,
+        "created_at": now,
+        "expires_at": now + timedelta(minutes=5),
+        "is_used": False
+    }
+    otp_record.insert_one(otp_data)
+
+    send_email_otp(
+        subject="Your OTP Code",
+        body=f"Your OTP is {otp_code}. It will expire in 5 minutes.",
+        receiver=email
+    )
+
+    return {"message": "OTP resent successfully", "email": email}
