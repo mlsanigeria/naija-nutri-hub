@@ -1,6 +1,6 @@
 # **Hacktoberfest Open Source Challenge 3.0**
 
-Welcome to the Hacktoberfest Open Source Challenge 3.0 organized by the Microsoft Learn Student Ambassadors Community in collaboration with the GitHub Campus Experts, Unilag Community! We're thrilled to have you on board for this exciting journey of collaboration and open-source contributions.
+Welcome to the Hacktoberfest Open Source Challenge 3.0 organized by the Microsoft Learn Student Ambassadors Community in collaboration with the [GitHub Campus Experts, Unilag Community](https://chat.whatsapp.com/IgY7V6RXFcwFkhLlnvOGKq)! We're thrilled to have you on board for this exciting journey of collaboration and open-source contributions.
 
 ## **About the Challenge**
 
