@@ -39,8 +39,9 @@ def index():
 
 # Create new user
 @app.post("/sign-up", tags=["Authentication"])
-def create_user(user_data: UserCreate):
-  return
+def sign_up_endpoint(user_data: UserCreate): # <-- RENAMED to avoid shadowing 'create_user' from auth.service
+    # The logic to call user_exists_email() and user_exists_username() will go here later
+    return
 
 @app.post("/verify", tags=["Authentication"])
 def verify_user_account(otp_data: OTPVerifyRequest):
