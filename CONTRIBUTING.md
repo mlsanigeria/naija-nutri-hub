@@ -92,11 +92,12 @@ Welcome to the **Naija Nutri Hub** project repository for ML/AI Engineering and 
 
 1. [How to Do Your First Pull Request](https://youtu.be/nkuYH40cjo4?si=Cb6U2EKVR_Ns4RLw)
 2. [Fundamentals of Azure OpenAI Service](https://learn.microsoft.com/en-us/training/modules/explore-azure-openai/?wt.mc_id=studentamb_217190)
-3. [Azure OpenAI Models: Deployment](https://learn.microsoft.com/azure/ai-services/openai/how-to/working-with-models?tabs=powershell?wt.mc_id=studentamb_217190)
-4. [Develop Generative AI solutions with Azure OpenAI Service](https://learn.microsoft.com/en-us/training/paths/develop-ai-solutions-azure-openai/?wt.mc_id=studentamb_217190)
-5. [Azure Custom Vision Documentation](https://learn.microsoft.com/en-us/azure/ai-services/custom-vision-service/quickstarts/image-classification?tabs=windows%2Cvisual-studio&pivots=programming-language-python).
-6. [Azure Custom Vision Video Tutorial](https://www.youtube.com/watch?v=PSHZJC1VvvI)
-7. [FastAPI Docs](https://fastapi.tiangolo.com/tutorial/)
+3. [Azure OpenAI Python SDK Setup](https://learn.microsoft.com/en-us/azure/ai-foundry/openai/supported-languages?tabs=dotnet-secure%2Csecure%2Cpython-key%2Ccommand&pivots=programming-language-python?wt.mc_id=studentamb_217190)
+4. [Azure OpenAI Models: Deployment](https://learn.microsoft.com/azure/ai-services/openai/how-to/working-with-models?tabs=powershell?wt.mc_id=studentamb_217190)
+5. [Develop Generative AI solutions with Azure OpenAI Service](https://learn.microsoft.com/en-us/training/paths/develop-ai-solutions-azure-openai/?wt.mc_id=studentamb_217190)
+6. [Azure Custom Vision Documentation](https://learn.microsoft.com/en-us/azure/ai-services/custom-vision-service/quickstarts/image-classification?tabs=windows%2Cvisual-studio&pivots=programming-language-python).
+7. [Azure Custom Vision Video Tutorial](https://www.youtube.com/watch?v=PSHZJC1VvvI)
+8. [FastAPI Docs](https://fastapi.tiangolo.com/tutorial/)
 
 ## 📊 Datasets/APIs
 1. [Nigerian Food Dataset - Images (Kaggle)](https://www.kaggle.com/datasets/elinteerie/nigeria-food-ai-dataset/data)
