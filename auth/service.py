@@ -30,7 +30,7 @@ def user_exists_username(username: str) -> bool:
 def create_user(user: UserCreate):
     return
 
-# length of 4 or 6
-def generate_otp(length: int = 4) -> str:
+# length of 6
+def generate_otp(length: int = 6) -> str:
     """Generate a random numeric OTP of given length."""
     return
