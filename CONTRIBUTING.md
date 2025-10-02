@@ -13,7 +13,30 @@ Welcome to the **Naija Nutri Hub** project repository for ML/AI Engineering and 
    git clone https://github.com/{user_name}/naija-nutri-hub.git
    ```
 
-2. **Set Up Virtual Environment:**
+2. **Create a Branch for Your Contribution:**
+
+   Before making any changes, create a new branch. This keeps the `main` branch clean and makes it easier to review contributions.
+   Use a descriptive name for your branch based on the type of contribution:
+   ```bash
+   # General format
+   git checkout -b <branch-name>
+   ```
+   **Examples:**
+   For documentation updates:
+   ```bash
+   git checkout -b docs/update-contributing
+   ```
+   For a new feature:
+
+   ```bash
+   git checkout -b feature/recipe-api
+   ```
+   For a bug fix:
+   ```bash
+   git checkout -b fix/login-bug
+   ```
+
+3. **Set Up Virtual Environment:**
 
    Create a virtual environment named `naija-nutri-hub`.
 
@@ -47,13 +70,13 @@ Welcome to the **Naija Nutri Hub** project repository for ML/AI Engineering and 
    ```bash
    python -m ipykernel install --user --name=naija-nutri-hub
    ```
-
-3. **Work on the Project:**
+   
+4. **Work on the Project:**
 
    - This repository is specifically for the **Naija Nutri Hub** project (ML/AI Engineering + Backend). Explore the project structure and check the **Issues** tab for tasks or bugs that you can address. 
    - You are encouraged to review the current implementation and contribute new features or improvements.
 
-4. **Commit and Push Your Changes:**
+5. **Commit and Push Your Changes:**
 
    Once your contributions are ready, commit your changes and push them to your forked repository.
 
@@ -63,7 +86,7 @@ Welcome to the **Naija Nutri Hub** project repository for ML/AI Engineering and 
    git push
    ```
 
-5. **Submit a Pull Request:**
+6. **Submit a Pull Request:**
 
    After pushing your changes, submit a pull request to merge them into the main repository. Make sure to include a clear and concise description of what your contribution entails.
 
@@ -102,4 +125,4 @@ Welcome to the **Naija Nutri Hub** project repository for ML/AI Engineering and 
 ## 📊 Datasets/APIs
 1. [Nigerian Food Dataset - Images (Kaggle)](https://www.kaggle.com/datasets/elinteerie/nigeria-food-ai-dataset/data)
 2. [Nigerian Food Description Dataset (Kaggle)](https://www.kaggle.com/datasets/franklycypher/nigerian-foods)
-3. [The MealDB](https://www.themealdb.com/) - provides API access to recipes and ingredients that could power the recipe feature of the solution. 
+3. [The MealDB](https://www.themealdb.com/) - provides API access to recipes and ingredients that could power the recipe feature of the solution.
