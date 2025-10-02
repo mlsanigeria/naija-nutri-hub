@@ -3,7 +3,7 @@ Here are WhatsApp communities specific to different universities. Join the one a
 
 | School | Link to Whatsapp Community |
 | --- | --- |
-| University of Lagos | https://forms.office.com/r/aQkzLcyXG8 |
+| University of Lagos | https://chat.whatsapp.com/LlOpmG5qOHc8gwheM2pVzc |
 | University of Ilorin  | https://chat.whatsapp.com/ECXDSQBB88q9M0pgmk5r2k |
 | Federal University of Technology, Minna | https://chat.whatsapp.com/GUxSulu7sc94vRQZyy9nK6 |
 | Federal University of Technology, Owerri | https://chat.whatsapp.com/Erxe4MH5FwpH7Vf6sVbK4C |
