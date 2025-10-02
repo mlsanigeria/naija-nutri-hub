@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.exceptions import HTTPException
 from bson import ObjectId
-from auth import service as s
+from auth.service import resend_otp
 
 # Authentication
 from auth.mail import send_email_otp
@@ -49,7 +49,7 @@ def verify_user_account(otp_data: OTPVerifyRequest):
 
 @app.post("/resend_otp", tags=["Authentication"])
 def resend_otp_api(email: str):
-    result = s.resend_otp(email)
+    result = resend_otp(email)
     if not result["ok"]:
         raise HTTPException(status_code=400, detail=result["message"])
     return result
