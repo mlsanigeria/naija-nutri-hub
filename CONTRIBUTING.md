@@ -13,7 +13,15 @@ Welcome to the **Naija Nutri Hub** project repository for ML/AI Engineering and 
    git clone https://github.com/{user_name}/naija-nutri-hub.git
    ```
 
-2. **Set Up Virtual Environment:**
+2. **Change to the project's directory:**
+
+   From your terminal, cd into `naija-nutri-hub`.
+
+   ```bash
+   cd naija-nutri-hub
+   ```
+
+3. **Set Up Virtual Environment:**
 
    Create a virtual environment named `naija-nutri-hub`.
 
@@ -47,12 +55,12 @@ Welcome to the **Naija Nutri Hub** project repository for ML/AI Engineering and 
    python -m ipykernel install --user --name=naija-nutri-hub
    ```
 
-3. **Work on the Project:**
+4. **Work on the Project:**
 
    - This repository is specifically for the **Naija Nutri Hub** project (ML/AI Engineering + Backend). Explore the project structure and check the **Issues** tab for tasks or bugs that you can address. 
    - You are encouraged to review the current implementation and contribute new features or improvements.
 
-4. **Commit and Push Your Changes:**
+5. **Commit and Push Your Changes:**
 
    Once your contributions are ready, commit your changes and push them to your forked repository.
 
@@ -62,7 +70,7 @@ Welcome to the **Naija Nutri Hub** project repository for ML/AI Engineering and 
    git push
    ```
 
-5. **Submit a Pull Request:**
+6. **Submit a Pull Request:**
 
    After pushing your changes, submit a pull request to merge them into the main repository. Make sure to include a clear and concise description of what your contribution entails.
 
