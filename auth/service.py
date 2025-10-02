@@ -24,11 +24,25 @@ def get_user_via_username(username: str):
     return user_serializer(...)
 
 def user_exists_email(email: str) -> bool:
-    return
+    """
+    Check if a user with the given email already exists in the user_auth collection.
+    
+    :param email: The email address to check.
+    :return: True if the user exists, False otherwise.
+    """
+    # Use count_documents() for an efficient check on the database.
+    return user_auth.count_documents({"email": email}) > 0
 
 
 def user_exists_username(username: str) -> bool:
-    return
+    """
+    Check if a user with the given username already exists in the user_auth collection.
+    
+    :param username: The username to check.
+    :return: True if the user exists, False otherwise.
+    """
+    # Use count_documents() for an efficient check on the database.
+    return user_auth.count_documents({"username": username}) > 0
 
 
 def create_user(user: UserCreate):
