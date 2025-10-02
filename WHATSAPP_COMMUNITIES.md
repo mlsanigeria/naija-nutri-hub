@@ -1,4 +1,4 @@
-## School WhatsApp Communities
+## MLSA Nigeria School WhatsApp Communities
 Here are WhatsApp communities specific to different universities. Join the one associated with your university to engage with your peers from the same institution:
 
 | School | Link to Whatsapp Community |
