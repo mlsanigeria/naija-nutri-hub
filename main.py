@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.exceptions import HTTPException
 from bson import ObjectId
+from auth.service import resend_otp_service
 
 # Authentication
 from auth.mail import send_email_otp
@@ -48,7 +49,7 @@ def verify_user_account(otp_data: OTPVerifyRequest):
 
 @app.post("/resend_otp", tags=["Authentication"])
 def resend_otp(email: str):
-    return
+    return resend_otp_service(email)
     
 @app.post("/login", tags=["Authentication"])
 def login_user(user: LoginRequest):
