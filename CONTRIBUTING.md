@@ -38,7 +38,6 @@ Welcome to the **Naija Nutri Hub** project repository for ML/AI Engineering and 
    Install necessary dependencies:
 
    ```bash
-   cd naija-nutri-hub
    pip install -r requirements.txt
    ```
 
