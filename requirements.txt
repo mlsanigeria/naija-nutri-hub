@@ -41,3 +41,6 @@ uvicorn==0.37.0
 uvloop==0.21.0
 watchfiles==1.1.0
 websockets==15.0.1
+pymongo==4.8.0           # Added: For MongoDB connection (if needed for integration tests)
+pytest==8.3.2            # Added: Core testing framework
+pytest-cov==5.0.0        # Added: For code coverage reporting
