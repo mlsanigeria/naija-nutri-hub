@@ -11,6 +11,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.exceptions import HTTPException
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from bson import ObjectId
+from auth.service import resend_otp_service
 
 # Authentication
 from auth.mail import send_email_otp
