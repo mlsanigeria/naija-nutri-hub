@@ -41,3 +41,12 @@ uvicorn==0.37.0
 uvloop==0.21.0
 watchfiles==1.1.0
 websockets==15.0.1
+# Testing Framework
+pytest==8.3.2
+pytest-mock==3.10.0
+
+# Database Driver (Required for the service layer logic, even when mocked)
+pymongo==4.7.4 
+
+# Password Hashing (Required for auth/utils.py and main.py)
+passlib==1.7.4 
