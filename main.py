@@ -1,23 +1,40 @@
-from fastapi import FastAPI
+import os
+import random
+import uuid
+from datetime import datetime, timedelta
+from typing import Optional
+
+import jwt
+from jose import JWTError
+from fastapi import FastAPI, Depends, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.exceptions import HTTPException
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from bson import ObjectId
 
 # Authentication
 from auth.mail import send_email_otp
-from auth.service import (create_user, generate_otp, get_user_via_email,
-                          get_user_via_username, user_exists_email,
-                          user_exists_username, user_serializer)
-
+from auth.service import (
+    create_user,
+    generate_otp,
+    get_user_via_email,
+    get_user_via_username,
+    user_exists_email,
+    user_exists_username,
+    user_serializer,
+    resend_otp_service,
+)
 from auth.utils import hash_password, verify_password
 
 # Schema/Database
-from schemas.schema import (LoginRequest, OTPModel, OTPVerifyRequest,
-                            ResetPasswordRequest, UserCreate)
+from schemas.schema import (
+    LoginRequest,
+    OTPModel,
+    OTPVerifyRequest,
+    ResetPasswordRequest,
+    UserCreate,
+)
 from config.database import otp_record, user_auth
-
-import random
-import uuid
 
 
 SECRET_KEY = os.getenv("SECRET_KEY", "a_very_secret_key_for_development")
@@ -25,6 +42,7 @@ ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30  # Token will be valid for 30 minutes
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
+
 
 # --- Helper Functions for JWT ---
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
@@ -37,6 +55,7 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
+
 
 async def get_current_user(token: str = Depends(oauth2_scheme)):
     """Decodes token and returns user if valid, otherwise raises exception."""
@@ -52,16 +71,17 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
             raise credentials_exception
     except JWTError:
         raise credentials_exception
-    
+
     user = get_user_via_username(username)
     if user is None:
         raise credentials_exception
     return user
 
+
 app = FastAPI(
-    title = "Naija Nutri Hub API",
-    description = "Backend API documentation for the Naija Nutri Hub project",
-    version = "1.0.0"
+    title="Naija Nutri Hub API",
+    description="Backend API documentation for the Naija Nutri Hub project",
+    version="1.0.0",
 )
 app.add_middleware(
     CORSMiddleware,
@@ -71,10 +91,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 # Home
 @app.get("/", tags=["Home"])
 def index():
     return {"Project": "Naija Nutri Hub"}
+
 
 # Create new user
 @app.post("/sign-up", tags=["Authentication"])
@@ -84,19 +106,24 @@ def sign_up_user(user_data: UserCreate):
         raise HTTPException(status_code=400, detail="Email already registered")
     if user_exists_username(user_data.username):
         raise HTTPException(status_code=400, detail="Username already taken")
-    
+
     new_user = create_user(user_data)
     return {"message": "User created successfully!", "user": new_user}
 
+
 @app.post("/verify", tags=["Authentication"])
 def verify_user_account(otp_data: OTPVerifyRequest):
-    return
+    # TODO: Implement OTP verification logic
+    return {"message": "Verification endpoint not yet implemented"}
+
 
 @app.post("/resend_otp", tags=["Authentication"])
 def resend_otp(email: str):
-    return
-    
-app.post("/login", tags=["Authentication"])
+    """Resend OTP using the service function."""
+    return resend_otp_service(email)
+
+
+@app.post("/login", tags=["Authentication"])
 def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends()):
     """
     Logs in a user and returns a JWT access token.
@@ -106,7 +133,7 @@ def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends()):
     user = get_user_via_username(form_data.username)
     if not user:
         user = get_user_via_email(form_data.username)
-    
+
     if not user or not verify_password(form_data.password, user["password_hash"]):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -119,6 +146,7 @@ def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends()):
     )
     return {"access_token": access_token, "token_type": "bearer"}
 
+
 # --- Example Protected Route ---
 @app.get("/users/me", tags=["Users"])
 async def read_users_me(current_user: dict = Depends(get_current_user)):
@@ -128,6 +156,8 @@ async def read_users_me(current_user: dict = Depends(get_current_user)):
     # We serialize it here to hide sensitive info like password hash
     return user_serializer(current_user)
 
-@app.post("/reset_password", tags=["authentication"])
+
+@app.post("/reset_password", tags=["Authentication"])
 def reset_password(user: ResetPasswordRequest):
-    return
+    # TODO: Implement password reset logic
+    return {"message": "Password reset endpoint not yet implemented"}
