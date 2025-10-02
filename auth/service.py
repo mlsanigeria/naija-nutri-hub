@@ -1,8 +1,8 @@
 from config.database import user_auth
 from schemas.schema import User, UserCreate
-from datetime import datetime, timedelta
-import utils as u
-import mail as m
+from datetime import datetime, timedelta, UTC
+from .utils import hash_password, hash_otp
+from .mail import send_email_otp
 import random
 import string
 import logging
@@ -19,88 +19,33 @@ MAX_RESENDS_PER_WINDOW = 5
 
 def user_serializer(user: dict):
     """
-    Extract public details from a MongoDB user document.
+    Extract details from user create model (withough default document id by MongoDB)
     """
-    if not user:
-        return None
-    return {
-        "id": str(user.get("_id")),
-        "email": user.get("email"),
-        "username": user.get("username"),
-        "is_verified": user.get("is_verified", False),
-    }
-
+  
+    return
 
 def get_user_via_email(email: str):
-    doc = user_auth.find_one({"email": email})
-    return user_serializer(doc)
+    return user_serializer(...)
 
 
-def user_exists_username(username: str) -> bool:
-    return user_auth.count_documents({"username": username}) > 0
-
+def get_user_via_username(username: str):
+    return user_serializer(...)
 
 def user_exists_email(email: str) -> bool:
-    return user_auth.count_documents({"email": email}) > 0
+    return
 
 
 def user_exists_username(username: str) -> bool:
-    return user_auth.count_documents({"username": username}) > 0
+    return
 
 
 def create_user(user: UserCreate):
-    """
-    Create a new user document, store hashed password,
-    generate OTP, send email and return serializer.
-    `user` is expected to be an object or dict with 'email', 'username', 'password' attrs.
-    """
-    email = getattr(user, "email", None) or user.get("email")
-    username = getattr(user, "username", None) or user.get("username")
-    password = getattr(user, "password", None) or user.get("password")
+    return
 
-    if user_exists_email(email):
-        raise ValueError("Email already exists")
-
-    if user_exists_username(username):
-        raise ValueError("Username already exists")
-
-    hashed_pw = u.hash_password(password)
-
-    otp_plain = generate_otp()
-    otp_hashed = u.hash_otp(otp_plain)
-    now = u._now_utc()
-    otp_expires_at = now + timedelta(minutes=OTP_TTL_MINUTES)
-
-    doc = {
-        "email": email,
-        "username": username,
-        "password": hashed_pw,
-        "is_verified": False,
-        "otp_hash": otp_hashed,
-        "otp_expires_at": otp_expires_at,
-        "otp_last_sent": now,
-        "otp_resend_count": 0,
-        "created_at": now,
-        "updated_at": now,
-    }
-
-    res = user_auth.insert_one(doc)
-    # send email
-    subject = "Your verification code"
-    body = f"Your OTP code is: {otp_plain}\nIt will expire in {OTP_TTL_MINUTES} minutes."
-    m.send_email_otp(subject, body, email)
-
-    # return created user (sanitized)
-    created = user_auth.find_one({"_id": res.inserted_id})
-    return user_serializer(created)
-
-
-# length of 4 or 6
-def generate_otp(length: int = OTP_LENGTH) -> str:
+# length of 6
+def generate_otp(length: int = 6) -> str:
     """Generate a random numeric OTP of given length."""
-    # Use digits only for simplicity
-    digits = string.digits
-    return "".join(random.choice(digits) for _ in range(length))
+    return
 
 
 def resend_otp(email: str) -> dict:
@@ -119,7 +64,7 @@ def resend_otp(email: str) -> dict:
         logger.warning(f"Resend OTP failed: {email} already verified")
         return {"ok": False, "message": "Account already verified"}
 
-    now = u._now_utc()
+    now = datetime.now(UTC)
     last_sent = user_doc.get("otp_last_sent")
     resend_count = user_doc.get("otp_resend_count", 0)
     resend_window_start = user_doc.get("otp_resend_window_start")
@@ -130,11 +75,11 @@ def resend_otp(email: str) -> dict:
             return None
         if isinstance(dt, str):
             try:
-                return datetime.fromisoformat(dt).replace(tzinfo=u.UTC)
+                return datetime.fromisoformat(dt).replace(tzinfo=UTC)
             except Exception:
                 return None
         if isinstance(dt, datetime):
-            return dt if dt.tzinfo else dt.replace(tzinfo=u.UTC)
+            return dt if dt.tzinfo else dt.replace(tzinfo=UTC)
         return None
 
     last_sent = _normalize(last_sent)
@@ -157,7 +102,7 @@ def resend_otp(email: str) -> dict:
 
     # Generate and hash new OTP
     otp_plain = generate_otp()
-    otp_hashed = u.hash_otp(otp_plain)
+    otp_hashed = hash_otp(otp_plain)
     otp_expires_at = now + timedelta(minutes=OTP_TTL_MINUTES)
 
     # Update user document
@@ -176,7 +121,7 @@ def resend_otp(email: str) -> dict:
     # Send OTP email
     subject = "Your new verification code"
     body = f"Your new OTP code is: {otp_plain}\nIt will expire in {OTP_TTL_MINUTES} minutes."
-    if not m.send_email_otp(subject, body, email):
+    if not send_email_otp(subject, body, email):
         logger.error(f"OTP email send failure for {email}")
         return {"ok": False, "message": "Failed to send OTP email. Please try again later."}
 
