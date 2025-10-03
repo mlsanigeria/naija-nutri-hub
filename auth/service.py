@@ -126,3 +126,75 @@ def resend_otp_service(email: str):
     )
 
     return {"message": "OTP resent successfully", "email": email}
+
+def request_password_reset(email: str):
+    """
+    Sends a password reset OTP to the user's registered email.
+    Reuses the existing OTP system.
+    """
+    now = datetime.now(timezone.utc)
+    user = user_auth.find_one({"email": email})
+    if not user:
+        return {"message": "If an account with that email exists, an OTP has been sent."}
+
+    # Rate-limit: no OTP within 60 seconds
+    last_otp = otp_record.find_one({"email": email}, sort=[("created_at", -1)])
+    if last_otp and (now - last_otp["created_at"].replace(tzinfo=timezone.utc)) < timedelta(seconds=60):
+        raise HTTPException(status_code=429, detail="Please wait before requesting another OTP")
+
+    # Invalidate old OTPs
+    otp_record.update_many({"email": email, "is_used": False}, {"$set": {"is_used": True}})
+
+    # Generate new OTP
+    otp_code = generate_otp()
+    otp_data = {
+        "email": email,
+        "otp": otp_code,
+        "created_at": now,
+        "expires_at": now + timedelta(minutes=5),
+        "is_used": False
+    }
+    otp_record.insert_one(otp_data)
+
+    # Send OTP via email
+    send_email_otp(
+        subject="Password Reset OTP",
+        body=f"Your password reset OTP is {otp_code}. It expires in 5 minutes.",
+        receiver=email
+    )
+
+    return {"message": "If an account with that email exists, an OTP has been sent."}
+
+
+def reset_user_password(email: str, otp: str, new_password: str):
+    """
+    Verifies the OTP and updates the user's password.
+    """
+    now = datetime.now(timezone.utc)
+
+    otp_entry = otp_record.find_one({"email": email, "otp": otp, "is_used": False})
+    if not otp_entry:
+        raise HTTPException(status_code=400, detail="Invalid OTP")
+
+    expires_at = otp_entry["expires_at"]
+    if expires_at.tzinfo is None:
+        expires_at = expires_at.replace(tzinfo=timezone.utc)
+
+    if now > expires_at:
+        raise HTTPException(status_code=400, detail="OTP expired")
+
+    # Update user password
+    user = user_auth.find_one({"email": email})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    hashed_pass = hash_password(new_password)
+    user_auth.update_one(
+        {"_id": user["_id"]},
+        {"$set": {"password_hash": hashed_pass, "updated_at": datetime.utcnow()}}
+    )
+
+    # Mark OTP as used
+    otp_record.update_one({"_id": otp_entry["_id"]}, {"$set": {"is_used": True}})
+
+    return {"message": "Password successfully reset."}
