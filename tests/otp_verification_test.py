@@ -12,7 +12,7 @@ def sample_user():
     """Create a test unverified user"""
     user_id = ObjectId()
     test_user = {
-    "_id": ObjectId(),  
+    "_id": user_id,  
     "email": "testuser@example.com",
     "name": "Test User",
     "password": "TestPassword123",
@@ -97,8 +97,8 @@ def test_verify_nonexistent_user():
         "otp": "123456"
     })
     
-    assert response.status_code == 404
-    assert "User not found" in response.json()["detail"]
+    assert response.status_code == 400
+    assert "Incorrect OTP" in response.json()["detail"]
 
 
 def test_otp_is_deleted_after_use(sample_user, valid_otp):

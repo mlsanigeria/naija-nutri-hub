@@ -129,19 +129,19 @@ def verify_user_account(otp_data: OTPVerifyRequest):
         ) 
     
     # Check for 10 minutes otp expiry 
-    otp_age = datetime.now(timezone.utc) - otp_record["created_at"]
+    otp_age = datetime.now(timezone.utc) - otp_rec["created_at"]
     OTP_EXPIRY_MINUTES = 10
     
     if otp_age > timedelta(minutes=OTP_EXPIRY_MINUTES):
         # Delete expired OTP
-        otp_record.delete_one({"email": otp_record["email"]})
+        otp_record.delete_one({"email": otp_rec["email"]})
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="OTP has expired. Please request a new one"
         )
     
     # Find user
-    user = user_auth.find_one({"email": otp_record["email"]})
+    user = user_auth.find_one({"email": otp_rec["email"]})
 
     if not user:
         raise HTTPException(
