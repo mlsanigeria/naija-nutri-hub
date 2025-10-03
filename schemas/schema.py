@@ -40,5 +40,6 @@ class LoginRequest(BaseModel):
 
 class ResetPasswordRequest(BaseModel):
     email: EmailStr
+    otp: str
     new_password: str = Field(min_length=6, max_length=20)
 
