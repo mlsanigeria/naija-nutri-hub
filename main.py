@@ -159,6 +159,12 @@ async def read_users_me(current_user: dict = Depends(get_current_user)):
 
 
 @app.post("/reset_password", tags=["Authentication"])
-def reset_password(user: ResetPasswordRequest):
-    # TODO: Implement password reset logic
-    return {"message": "Password reset endpoint not yet implemented"}
+def reset_password(payload: ResetPasswordRequest):
+    """Verify OTP and reset password"""
+    return reset_user_password(payload.email, payload.otp, payload.new_password)
+
+@app.post("/forgot_password", tags=["Authentication"])
+def forgot_password_request(request: ForgotPasswordRequest):
+    """Request password reset OTP"""
+    return request_password_reset(request.email)
+
