@@ -32,7 +32,7 @@ from schemas.schema import (
     LoginRequest,
     OTPModel,
     OTPVerifyRequest,
-    ResetPasswordRequest,
+    ResetPasswordPayload,
     UserCreate,
 )
 from config.database import otp_record, user_auth
@@ -158,7 +158,20 @@ async def read_users_me(current_user: dict = Depends(get_current_user)):
     return user_serializer(current_user)
 
 
+@app.post("/forgot_password", tags=["Authentication"])
+def forgot_password_request(request: ForgotPasswordRequest):
+    """
+    STEP 1: Endpoint to request a password reset token, which sends the token to the user's email.
+    """
+    return request_password_reset(request.email)
+
+
 @app.post("/reset_password", tags=["Authentication"])
-def reset_password(user: ResetPasswordRequest):
-    # TODO: Implement password reset logic
-    return {"message": "Password reset endpoint not yet implemented"}
+def reset_password(payload: ResetPasswordPayload):
+    """
+    STEP 2: Endpoint to verify the reset token and set a new password.
+    Replaces the original TODO stub with the new logic.
+    """
+    # Calls the service logic to verify the token and update the password
+    return reset_user_password(payload.token, payload.new_password)
+
