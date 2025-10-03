@@ -8,7 +8,7 @@ from auth.utils import hash_password  # your hashing function
 load_dotenv()
 
 # Connect to MongoDB
-client = MongoClient(os.getenv("MONGODB_CONNECTION_STRING"))
+client = MongoClient(os.getenv("MONGODB_CONNECTION_STRING"), tz_aware=True, tzinfo=timezone.utc)
 db = client.auth
 user_auth = db["user-auth"]     # <-- your users collection
 otp_record = db["otp-data"]     # <-- OTP collection (optional)
@@ -16,6 +16,7 @@ otp_record = db["otp-data"]     # <-- OTP collection (optional)
 # Example test user
 from bson import ObjectId
 
+"""
 test_user = {
     "_id": ObjectId(),  # explicitly generate ObjectId
     "email": "testuser@example.com",
@@ -28,3 +29,4 @@ test_user = {
 # Insert user
 user_auth.insert_one(test_user)
 print("Test user inserted!")
+"""

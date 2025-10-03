@@ -1,7 +1,7 @@
 import os
 import random
 import uuid
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 import jwt
@@ -114,8 +114,50 @@ def sign_up_user(user_data: UserCreate):
 
 @app.post("/verify", tags=["Authentication"])
 def verify_user_account(otp_data: OTPVerifyRequest):
-    # TODO: Implement OTP verification logic
-    return {"message": "Verification endpoint not yet implemented"}
+    """ Verify user account using OTP"""
+
+    # Check the OTP record
+    otp_rec = otp_record.find_one({
+        "email": otp_data.email,
+        "otp": otp_data.otp
+    })
+
+    if not otp_rec:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Incorrect OTP",
+        ) 
+    
+    # Check for 10 minutes otp expiry 
+    otp_age = datetime.now(timezone.utc) - otp_rec["created_at"]
+    OTP_EXPIRY_MINUTES = 10
+    
+    if otp_age > timedelta(minutes=OTP_EXPIRY_MINUTES):
+        # Delete expired OTP
+        otp_record.delete_one({"email": otp_rec["email"]})
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="OTP has expired. Please request a new one"
+        )
+    
+    # Find user
+    user = user_auth.find_one({"email": otp_rec["email"]})
+
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+    
+    user_auth.update_one({"email": user["email"]}, {
+        "$set": {
+            "is_verified": True,
+            "updated_at": datetime.now(timezone.utc)
+        }
+    })
+
+    otp_record.delete_one({"email": otp_rec["email"]})
+    return {"message": "Account verified successfully"}
 
 
 @app.post("/resend_otp", tags=["Authentication"])
