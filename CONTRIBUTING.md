@@ -126,3 +126,4 @@ Welcome to the **Naija Nutri Hub** project repository for ML/AI Engineering and 
 1. [Nigerian Food Dataset - Images (Kaggle)](https://www.kaggle.com/datasets/elinteerie/nigeria-food-ai-dataset/data)
 2. [Nigerian Food Description Dataset (Kaggle)](https://www.kaggle.com/datasets/franklycypher/nigerian-foods)
 3. [The MealDB](https://www.themealdb.com/) - provides API access to recipes and ingredients that could power the recipe feature of the solution.
+4. [Spoonacular API](https://spoonacular.com/food-api) - a food and recipe API that provides access to a vast database of recipes, ingredients, and nutritional information. It can be used to retrieve structured and accurate data to support the recipe generation, and nutritional facts features of this project.
