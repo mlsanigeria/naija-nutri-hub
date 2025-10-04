@@ -1,6 +1,7 @@
 import os
 import random
 import uuid
+from dotenv import load_dotenv
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 
@@ -36,6 +37,9 @@ from schemas.schema import (
     UserCreate,
 )
 from config.database import otp_record, user_auth
+
+# Load environment variables
+load_dotenv()
 
 
 SECRET_KEY = os.getenv("SECRET_KEY", "a_very_secret_key_for_development")
