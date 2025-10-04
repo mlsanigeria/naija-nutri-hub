@@ -204,7 +204,61 @@ async def read_users_me(current_user: dict = Depends(get_current_user)):
     return user_serializer(current_user)
 
 
+@app.post("/verify_reset_otp", tags=["Authentication"])
+def verify_reset_otp(otp_data: OTPVerifyRequest):
+    """
+    Verifies the OTP sent for password reset.
+    """
+    otp_entry = otp_record.find_one({
+        "email": otp_data.email,
+        "otp": otp_data.otp
+    })
+
+    if not otp_entry:
+        raise HTTPException(status_code=400, detail="Invalid OTP")
+
+    now = datetime.now(timezone.utc)
+    expires_at = otp_entry["expires_at"]
+
+    if expires_at.tzinfo is None:
+        expires_at = expires_at.replace(tzinfo=timezone.utc)
+
+    if now > expires_at:
+        otp_record.delete_one({"email": otp_data.email})
+        raise HTTPException(status_code=400, detail="OTP expired. Please request a new one")
+
+    otp_record.update_one(
+        {"_id": otp_entry["_id"]},
+        {"$set": {"is_used": True}}
+    )
+
+    return {"message": "OTP verified successfully. You may now reset your password."}
+
+
 @app.post("/reset_password", tags=["Authentication"])
-def reset_password(user: ResetPasswordRequest):
-    # TODO: Implement password reset logic
-    return {"message": "Password reset endpoint not yet implemented"}
+def reset_password(req: ResetPasswordRequest):
+    """
+    Resets the user's password after successful OTP verification.
+    """
+    otp_entry = otp_record.find_one({"email": req.email}, sort=[("created_at", -1)])
+
+    if not otp_entry or not otp_entry.get("is_used", False):
+        raise HTTPException(
+            status_code=400,
+            detail="OTP not verified. Please verify OTP before resetting password."
+        )
+
+    user = user_auth.find_one({"email": req.email})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    hashed_password = hash_password(req.new_password)
+
+    user_auth.update_one(
+        {"email": req.email},
+        {"$set": {"password_hash": hashed_password, "updated_at": datetime.now(timezone.utc)}}
+    )
+
+    otp_record.delete_one({"email": req.email})
+    return {"message": "Password reset successfully"}
+
