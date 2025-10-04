@@ -170,28 +170,65 @@ def resend_otp(email: str):
     return resend_otp_service(email)
 
 
+# @app.post("/login", tags=["Authentication"])
+# def login_user(form_data: OAuth2PasswordRequestForm = Depends()):
+#     """
+#     Logs in a user and returns a JWT access token.
+#     FastAPI's form dependency expects 'username' and 'password' fields.
+#     """
+#     # Check if user exists (can be username or email)
+#     user = get_user_via_username(form_data.username)
+#     if not user:
+#         user = get_user_via_email(form_data.username)
+
+#     if not user or not verify_password(form_data.password, user["password_hash"]):
+#         raise HTTPException(
+#             status_code=status.HTTP_401_UNAUTHORIZED,
+#             detail="Incorrect username or password",
+#             headers={"WWW-Authenticate": "Bearer"},
+#         )
+#     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+#     access_token = create_access_token(
+#         data={"sub": user["username"]}, expires_delta=access_token_expires
+#     )
+#     return {"access_token": access_token, "token_type": "bearer"}
+
 @app.post("/login", tags=["Authentication"])
 def login_user(form_data: OAuth2PasswordRequestForm = Depends()):
     """
-    Logs in a user and returns a JWT access token.
-    FastAPI's form dependency expects 'username' and 'password' fields.
+    Logs in a user using bcrypt-only verification (no JWT).
+    Only verified accounts are allowed to log in.
     """
-    # Check if user exists (can be username or email)
+    # Try to get user by username first, then email
     user = get_user_via_username(form_data.username)
     if not user:
         user = get_user_via_email(form_data.username)
 
+    # If user not found OR password incorrect
     if not user or not verify_password(form_data.password, user["password_hash"]):
+        # Return generic error (do not reveal which part failed)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect username or password",
-            headers={"WWW-Authenticate": "Bearer"},
+            detail="Invalid credentials",
         )
-    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    access_token = create_access_token(
-        data={"sub": user["username"]}, expires_delta=access_token_expires
-    )
-    return {"access_token": access_token, "token_type": "bearer"}
+
+    # Check if user is verified
+    if not user.get("is_verified", False):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Account not verified. Please verify your account first.",
+        )
+
+    # Successful login — return basic user info (hide password)
+    return {
+        "message": "Login successful",
+        "user": {
+            "username": user["username"],
+            "email": user["email"],
+            "is_verified": user["is_verified"]
+        }
+    }
+
 
 
 # --- Example Protected Route ---
