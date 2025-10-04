@@ -1,0 +1,100 @@
+<!--
+  OTP Email Template
+
+  Placeholders:
+    {{otp}}             - one-time-password code
+    {{expiry_minutes}}  - how long the OTP is valid (e.g., 10 minutes)
+    {{user_name}}       - optional display name
+    {{app_name}}        - application name for branding
+    {{support_email}}   - support contact email
+
+  Usage:
+    - Replace placeholders using your templating engine or a simple string replace.
+-->
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{{app_name}} — Your verification code</title>
+    <style>
+      /* Mobile-first, simple inline-safe styles. Keep rules minimal for email clients. */
+      :root{
+        color-scheme: light;
+      }
+      /* Ensure the demo render centers the content in the viewport. We keep table-based
+         layout and minimal inline CSS so the template remains email-client friendly. */
+      html, body {height: 100%;}
+      body{margin:0;padding:0;background:#f4f6f8;color:#111;font-family:Arial,Helvetica,sans-serif;-webkit-text-size-adjust:100%;-ms-text-size-adjust:100%;}
+  .container{width:100%;max-width:600px;margin:0 auto;padding:24px;}
+  /* Outer table cell used for vertical centering in demos and email clients. */
+  .outer-cell{padding:40px 0}
+      .card{background:#ffffff;border-radius:8px;padding:24px;border:1px solid #e6e9ee}
+      h1{font-size:20px;margin:0 0 8px;color:#0b2545}
+      p{margin:0 0 12px;line-height:1.4;color:#233249}
+      .otp{display:inline-block;background:#f7fafc;border:1px dashed #cfe3ff;color:#0b2545;font-weight:700;font-size:28px;letter-spacing:4px;padding:12px 18px;border-radius:6px;margin:14px 0}
+      .note{font-size:13px;color:#6b7790}
+      .footer{font-size:12px;color:#98a1b3;padding-top:18px;border-top:1px solid #eef2f6;margin-top:18px}
+      .brand{font-weight:700;color:#0b2545}
+      a.support{color:#0b6cff;text-decoration:none}
+
+      /* Stack layout for small screens */
+      @media only screen and (max-width:420px){
+        /* On small screens, disable vertical centering so the email content sits near
+           the top of the viewport. Keep a small top padding for breathing room. Use
+           !important to increase the chance email clients that support media queries
+           will apply this override. */
+        .outer-cell{vertical-align:top !important; padding-top:12px !important}
+        .container{padding:16px}
+        .card{padding:18px}
+        .otp{font-size:22px;padding:10px 14px}
+        h1{font-size:18px}
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Outer table fills the viewport so the inner card can be vertically centered in demos while
+         remaining compatible with email clients that prefer table layouts. -->
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f4f6f8;width:100%;min-height:100vh;">
+      <tr style="height:100%">
+        <td class="outer-cell" align="center" valign="middle" style="padding:40px 0">
+          <table role="presentation" class="container" cellpadding="0" cellspacing="0">
+            <tr>
+              <td>
+                <div class="card" role="article" aria-label="One time password from {{app_name}}">
+                  <h1>Verify your identity</h1>
+                  <p>
+                    Hi {{user_name}},
+                  </p>
+                  <p>
+                    Use the code below to complete your sign in to <span class="brand">{{app_name}}</span>. This code will expire in <strong>{{expiry_minutes}} minutes</strong>.
+                  </p>
+
+                  <div class="otp" aria-hidden="false">{{otp}}</div>
+
+                  <p class="note">
+                    If you didn't request this, you can safely ignore this email. For help, contact <a class="support" href="mailto:{{support_email}}">{{support_email}}</a>.
+                  </p>
+
+                  <p style="margin-top:12px;font-size:13px;color:#465770;">
+                    Tip: For best security, do not share this code with anyone.
+                  </p>
+
+                  <div class="footer" role="contentinfo">
+                    <div>{{app_name}} • Need help? <a class="support" href="mailto:{{support_email}}">Contact support</a></div>
+                    <div style="margin-top:6px;color:#a0a9bd">If the button above doesn't work, copy and paste the code into the app.</div>
+                  </div>
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding-top:14px;text-align:center;color:#98a1b3;font-size:12px">
+                © <span id="year">2025</span> {{app_name}}. All rights reserved.
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>
