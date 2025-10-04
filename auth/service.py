@@ -109,13 +109,11 @@ def resend_otp_service(email: str):
 
     otp_record.delete_many({"email": email})
 
-    otp_code = str(random.randint(100000, 999999))
+    otp_code = generate_otp()
     otp_data = {
         "email": email,
         "otp": otp_code,
         "created_at": now,
-        "expires_at": now + timedelta(minutes=5),
-        "is_used": False
     }
     otp_record.insert_one(otp_data)
 
