@@ -166,6 +166,76 @@ def resend_otp(email: str):
     return resend_otp_service(email)
 
 
+@app.post("/request_reset_otp", tags=["Authentication"])
+def request_reset_otp(email: str):
+    """
+    Sends an OTP to the user's email for password reset.
+    """
+    user = user_auth.find_one({"email": email})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    now = datetime.now(timezone.utc)
+
+    last_otp = otp_record.find_one({"email": email}, sort=[("created_at", -1)])
+    if last_otp:
+        created_at = last_otp["created_at"]
+        if created_at.tzinfo is None:
+            created_at = created_at.replace(tzinfo=timezone.utc)
+        if (now - created_at) < timedelta(seconds=60):
+            raise HTTPException(status_code=429, detail="Please wait before requesting another OTP")
+
+    otp_record.delete_many({"email": email})
+
+    otp_code = str(random.randint(100000, 999999))
+    otp_data = {
+        "email": email,
+        "otp": otp_code,
+        "created_at": now,
+        "expires_at": now + timedelta(minutes=5),
+        "is_used": False
+    }
+    otp_record.insert_one(otp_data)
+
+    send_email_otp(
+        subject="Password Reset OTP",
+        body=f"Your password reset OTP is {otp_code}. It expires in 5 minutes.",
+        receiver=email
+    )
+
+    return {"message": "OTP sent successfully", "email": email}
+
+@app.post("/verify_reset_otp", tags=["Authentication"])
+def verify_reset_otp(otp_data: OTPVerifyRequest):
+    """
+    Verifies the OTP sent for password reset.
+    """
+    otp_entry = otp_record.find_one({"email": otp_data.email, "otp": otp_data.otp})
+
+    if not otp_entry:
+        raise HTTPException(status_code=400, detail="Invalid OTP")
+
+    if otp_entry["is_used"]:
+        raise HTTPException(status_code=400, detail="OTP already used")
+
+    now = datetime.now(timezone.utc)
+    expires_at = otp_entry["expires_at"]
+
+    if expires_at.tzinfo is None:
+        expires_at = expires_at.replace(tzinfo=timezone.utc)
+
+    if now > expires_at:
+        otp_record.delete_one({"email": otp_data.email})
+        raise HTTPException(status_code=400, detail="OTP expired. Please request a new one")
+
+    # Mark OTP as used
+    otp_record.update_one(
+        {"_id": otp_entry["_id"]},
+        {"$set": {"is_used": True}}
+    )
+
+    return {"message": "OTP verified successfully. You may now reset your password."}
+
 @app.post("/login", tags=["Authentication"])
 def login_user(form_data: OAuth2PasswordRequestForm = Depends()):
     """
@@ -201,6 +271,32 @@ async def read_users_me(current_user: dict = Depends(get_current_user)):
 
 
 @app.post("/reset_password", tags=["Authentication"])
-def reset_password(user: ResetPasswordRequest):
-    # TODO: Implement password reset logic
-    return {"message": "Password reset endpoint not yet implemented"}
+def reset_password(req: ResetPasswordRequest):
+    """
+    Resets the user's password after OTP verification.
+    """
+    # Fetch the most recent OTP record
+    otp_entry = otp_record.find_one({"email": req.email}, sort=[("created_at", -1)])
+
+    if not otp_entry or not otp_entry.get("is_used", False):
+        raise HTTPException(
+            status_code=400,
+            detail="OTP not verified or expired. Please verify your OTP before resetting password."
+        )
+
+    user = user_auth.find_one({"email": req.email})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    hashed_password = hash_password(req.new_password)
+
+    user_auth.update_one(
+        {"email": req.email},
+        {"$set": {"password_hash": hashed_password, "updated_at": datetime.now(timezone.utc)}}
+    )
+
+    # Optionally delete OTP after successful password reset
+    otp_record.delete_one({"email": req.email})
+
+    return {"message": "Password reset successfully"}
+
