@@ -31,7 +31,7 @@ Once your request is approved, you will receive a **link** and **a verification 
 Once you’ve completed the steps above, you’ll be able to:
  - Get the needed API keys and endpoints of LLMs deployed for use (via Azure AI Foundary or the Azure OpenAI Studio).
  - Integrate with our backend for the generation of Nutritional facts and Recipes of Nigerian foods.
- - Wrap functions around nutrional facts and recipe generations with Datasets/APIs in the [Contribution Guidelines]() and other resources you find relevant to augment/ground responses.
+ - Wrap functions around nutrional facts and recipe generations with [Datasets/APIs](https://github.com/mlsanigeria/naija-nutri-hub/blob/main/CONTRIBUTING.md#-datasetsapis) in the Contribution Guidelines and other resources you find relevant to augment/ground responses.
 
 
 
