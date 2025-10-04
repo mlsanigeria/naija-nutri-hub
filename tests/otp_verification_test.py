@@ -4,25 +4,28 @@ from datetime import datetime, timedelta, timezone
 from bson import ObjectId
 from config.database import user_auth, otp_record
 from main import app
+from auth.utils import hash_password
 
 client = TestClient(app)
 
 @pytest.fixture
 def sample_user():
     """Create a test unverified user"""
-    user_id = ObjectId()
+    # user_id = ObjectId()
     test_user = {
-    "_id": user_id,  
+    # "_id": user_id,  
     "email": "testuser@example.com",
-    "name": "Test User",
-    "password": "TestPassword123",
+    "firstname": "Test",
+    "lastname": "User",
+    "username": "testuser",
+    "password": hash_password("TestPassword123"),
     "created_at": datetime.now(timezone.utc)
     }
 
     user_auth.insert_one(test_user)
     yield test_user
     # Cleanup
-    user_auth.delete_one({"_id": user_id})
+    user_auth.delete_one({"email": test_user["email"]})
 
 
 @pytest.fixture
