@@ -3,7 +3,7 @@ import random
 import uuid
 from dotenv import load_dotenv
 from datetime import datetime, timedelta, timezone
-from typing import Optional
+from typing import Optional, List, Dict, Any
 
 import jwt
 from jose import JWTError
@@ -23,6 +23,15 @@ from src.nutritional_facts.nutritional_facts import (
     analyze_complete_meal,
     compare_foods,
     get_nutrition_database_foods
+)
+
+# Recipe Generation
+from src.recipe_generation.recipe_generation import (
+    generate_nigerian_recipe,
+    generate_multiple_nigerian_recipes,
+    get_recipe_modifications,
+    get_available_nigerian_recipes,
+    search_recipes_by_ingredients
 )
 
 # Authentication
@@ -548,4 +557,180 @@ async def get_food_health_analysis(
         raise HTTPException(
             status_code=500,
             detail=f"Failed to get health analysis: {str(e)}"
+        )
+
+
+# --- Recipe Generation Endpoints ---
+@app.get("/recipes/{food_name}",
+         responses={400: {"model": ErrorResponse}, 500: {"model": ErrorResponse}},
+         tags=["Recipe Generation"])
+async def get_recipe(
+    food_name: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Generate a comprehensive recipe for a Nigerian food.
+    
+    This endpoint provides detailed recipe information including ingredients,
+    step-by-step instructions, cooking tips, and cultural context for Nigerian dishes.
+    
+    - **food_name**: Name of the Nigerian food (e.g., "Jollof Rice", "Egusi Soup")
+    - **Returns**: Complete recipe with AI enhancements and local database information
+    """
+    try:
+        result = generate_nigerian_recipe(food_name)
+        
+        if "error" in result:
+            raise HTTPException(
+                status_code=400,
+                detail=result["error"]
+            )
+        
+        return result
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to generate recipe: {str(e)}"
+        )
+
+
+@app.post("/recipes/multiple",
+          responses={400: {"model": ErrorResponse}, 500: {"model": ErrorResponse}},
+          tags=["Recipe Generation"])
+async def get_multiple_recipes(
+    food_names: List[str],
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Generate recipes for multiple Nigerian foods with meal planning suggestions.
+    
+    This endpoint provides recipes for multiple dishes along with meal planning
+    suggestions, cooking sequences, and complementary dish recommendations.
+    
+    - **food_names**: List of Nigerian food names (maximum 5)
+    - **Returns**: Collection of recipes with meal planning guidance
+    """
+    if len(food_names) > 5:
+        raise HTTPException(
+            status_code=400,
+            detail="Maximum 5 recipes can be generated at once"
+        )
+    
+    if len(food_names) == 0:
+        raise HTTPException(
+            status_code=400,
+            detail="At least one food name is required"
+        )
+    
+    try:
+        result = generate_multiple_nigerian_recipes(food_names)
+        
+        if "error" in result:
+            raise HTTPException(
+                status_code=400,
+                detail=result["error"]
+            )
+        
+        return result
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to generate multiple recipes: {str(e)}"
+        )
+
+
+@app.post("/recipes/{food_name}/modify",
+          responses={400: {"model": ErrorResponse}, 500: {"model": ErrorResponse}},
+          tags=["Recipe Generation"])
+async def modify_recipe(
+    food_name: str,
+    preferences: Dict[str, Any],
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Modify a recipe based on dietary preferences and constraints.
+    
+    This endpoint adapts traditional Nigerian recipes to accommodate
+    dietary restrictions, serving sizes, time constraints, and available ingredients.
+    
+    - **food_name**: Name of the Nigerian food
+    - **preferences**: Dictionary containing modification preferences:
+        - dietary_restrictions: List of dietary restrictions (e.g., ["vegetarian", "low-sodium"])
+        - serving_size: Number of people to serve (default: 4)
+        - time_limit: Available cooking time in minutes (default: 60)
+        - available_ingredients: List of available ingredients
+    - **Returns**: Modified recipe suggestions maintaining authentic Nigerian flavors
+    """
+    try:
+        result = get_recipe_modifications(food_name, preferences)
+        
+        if "error" in result:
+            raise HTTPException(
+                status_code=400,
+                detail=result["error"]
+            )
+        
+        return result
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to modify recipe: {str(e)}"
+        )
+
+
+@app.get("/recipes/search/ingredient/{ingredient}",
+         tags=["Recipe Generation"])
+async def search_recipes_by_ingredient(
+    ingredient: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Search for Nigerian recipes containing a specific ingredient.
+    
+    This endpoint finds all available recipes that include the specified ingredient,
+    helping users discover new dishes based on what they have available.
+    
+    - **ingredient**: Ingredient to search for (e.g., "rice", "tomatoes", "chicken")
+    - **Returns**: List of recipe names containing the ingredient
+    """
+    try:
+        recipes = search_recipes_by_ingredients(ingredient)
+        
+        return {
+            "ingredient": ingredient,
+            "matching_recipes": recipes,
+            "total_matches": len(recipes),
+            "message": f"Found {len(recipes)} recipes containing '{ingredient}'"
+        }
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to search recipes: {str(e)}"
+        )
+
+
+@app.get("/recipes/database-recipes",
+         tags=["Recipe Generation"])
+async def get_available_recipes():
+    """
+    Get list of Nigerian recipes available in the recipe database.
+    
+    Returns a list of all Nigerian recipes for which complete recipe information
+    is available in the local database.
+    """
+    try:
+        recipes = get_available_nigerian_recipes()
+        return {
+            "available_recipes": recipes,
+            "total_recipes": len(recipes),
+            "message": f"Found {len(recipes)} Nigerian recipes in the database"
+        }
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to retrieve recipe list: {str(e)}"
         )

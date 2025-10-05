@@ -1,0 +1,131 @@
+system_prompt: |
+  You are a Nigerian cuisine expert and professional chef specializing in traditional and modern Nigerian recipes. 
+  Your task is to generate authentic, structured recipes for Nigerian dishes.
+  
+  Guidelines:
+  1. Generate authentic Nigerian recipes with accurate ingredients and methods
+  2. Include traditional cooking techniques and cultural context
+  3. Provide clear, step-by-step instructions that beginners can follow
+  4. Include ingredient quantities, cooking times, and serving suggestions
+  5. Mention regional variations when applicable
+  6. Include tips for ingredient substitutions if authentic ingredients aren't available
+  7. Always respond in structured JSON format as specified
+  8. Use traditional Nigerian cooking methods and terminology
+
+recipe_generation_prompt: |
+  Generate a complete, authentic recipe for the Nigerian dish: "{food_name}"
+  
+  Please provide a comprehensive recipe that includes:
+  - Complete ingredients list with exact quantities
+  - Step-by-step preparation instructions
+  - Cooking time and difficulty level
+  - Serving size and nutritional highlights
+  - Traditional cooking tips and cultural context
+  - Regional variations if applicable
+  - Ingredient substitution suggestions
+  
+  Ensure the recipe is authentic to Nigerian cuisine and follows traditional preparation methods.
+  Format your response as structured JSON with the following schema:
+  
+  {{
+    "recipe_name": "Name of the dish",
+    "description": "Brief description of the dish",
+    "cuisine_type": "Nigerian",
+    "region": "Nigerian region if specific",
+    "difficulty": "Easy/Medium/Hard",
+    "prep_time": "X minutes",
+    "cook_time": "X minutes", 
+    "total_time": "X minutes",
+    "servings": "X people",
+    "ingredients": [
+      {{
+        "name": "ingredient name",
+        "quantity": "amount",
+        "unit": "measurement unit",
+        "notes": "preparation notes if any"
+      }}
+    ],
+    "instructions": [
+      {{
+        "step": 1,
+        "instruction": "detailed step description",
+        "time": "time for this step if applicable"
+      }}
+    ],
+    "cooking_tips": [
+      "traditional cooking tip 1",
+      "traditional cooking tip 2"
+    ],
+    "cultural_context": "Background about the dish in Nigerian culture",
+    "nutritional_highlights": [
+      "key nutritional benefit 1",
+      "key nutritional benefit 2"
+    ],
+    "variations": [
+      {{
+        "name": "variation name",
+        "description": "how to make this variation"
+      }}
+    ],
+    "ingredient_substitutions": [
+      {{
+        "original": "original ingredient",
+        "substitute": "substitute ingredient",
+        "notes": "substitution notes"
+      }}
+    ]
+  }}
+
+bulk_recipe_generation_prompt: |
+  Generate recipes for multiple Nigerian dishes: {food_names}
+  
+  For each dish, provide:
+  - Complete recipe with ingredients and instructions
+  - Difficulty level and timing information
+  - Cultural context and cooking tips
+  - How these dishes complement each other in a meal
+  
+  Format response as JSON array with individual recipe objects.
+
+recipe_modification_prompt: |
+  Modify the recipe for "{food_name}" based on the following preferences:
+  - Dietary restrictions: {dietary_restrictions}
+  - Serving size: {serving_size} people
+  - Available cooking time: {time_limit} minutes
+  - Available ingredients: {available_ingredients}
+  
+  Provide an adapted recipe that maintains the authentic Nigerian flavor while accommodating these constraints.
+
+recipe_pairing_prompt: |
+  Suggest traditional Nigerian dish pairings for "{food_name}":
+  
+  Include:
+  - Traditional accompaniments (soups, sides, drinks)
+  - Regional pairing preferences
+  - Nutritional balance considerations
+  - Cultural significance of the combinations
+  
+  Format as structured recommendations with explanations.
+
+cooking_tips_prompt: |
+  Provide detailed cooking tips and techniques for preparing "{food_name}":
+  
+  Include:
+  - Traditional Nigerian cooking methods
+  - Common mistakes to avoid
+  - Professional chef secrets
+  - Equipment recommendations
+  - Storage and reheating instructions
+  
+  Focus on authentic Nigerian cooking wisdom passed down through generations.
+
+ingredient_guide_prompt: |
+  Create a comprehensive ingredient guide for Nigerian cooking, focusing on ingredients used in "{food_name}":
+  
+  Include:
+  - Where to find authentic Nigerian ingredients
+  - Proper selection and storage methods
+  - Traditional preparation techniques
+  - Health benefits and nutritional value
+  - Seasonal availability
+  - Suitable substitutions for diaspora cooking
