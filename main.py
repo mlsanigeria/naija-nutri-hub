@@ -7,12 +7,15 @@ from typing import Optional
 
 import jwt
 from jose import JWTError
-from fastapi import FastAPI, Depends, status
+from fastapi import FastAPI, Depends, status, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.exceptions import HTTPException
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from bson import ObjectId
 from auth.service import resend_otp_service
+
+# Food Classification
+from src.food_classifier.image_classification import classify_image, get_related_foods
 
 # Authentication
 from auth.mail import send_email_otp
@@ -35,6 +38,8 @@ from schemas.schema import (
     OTPVerifyRequest,
     ResetPasswordRequest,
     UserCreate,
+    FoodClassificationResponse,
+    ErrorResponse,
 )
 from config.database import otp_record, user_auth
 
@@ -250,3 +255,109 @@ def reset_password(req: ResetPasswordRequest):
     otp_record.delete_one({"email": req.email})
     return {"message": "Password reset successfully"}
 
+
+# --- Food Classification Endpoints ---
+@app.post("/classify-food", 
+         response_model=FoodClassificationResponse,
+         responses={400: {"model": ErrorResponse}, 500: {"model": ErrorResponse}},
+         tags=["Food Classification"])
+async def classify_food_image(
+    file: UploadFile = File(..., description="Image file containing Nigerian food"),
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Classify Nigerian food from an uploaded image.
+    
+    This endpoint accepts an image file and uses AI to identify Nigerian foods present in the image.
+    It returns detailed information about detected foods including confidence scores and descriptions.
+    
+    - **file**: Image file (JPG, PNG, etc.) containing food to be classified
+    - **Returns**: Detailed classification results including detected foods, confidence scores, and related food suggestions
+    """
+    
+    # Validate file type
+    if not file.content_type.startswith('image/'):
+        raise HTTPException(
+            status_code=400, 
+            detail="File must be an image (JPG, PNG, etc.)"
+        )
+    
+    # Check file size (limit to 10MB)
+    MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
+    file_content = await file.read()
+    
+    if len(file_content) > MAX_FILE_SIZE:
+        raise HTTPException(
+            status_code=400,
+            detail="File size too large. Maximum allowed size is 10MB."
+        )
+    
+    if len(file_content) == 0:
+        raise HTTPException(
+            status_code=400,
+            detail="Empty file uploaded."
+        )
+    
+    try:
+        # Classify the image
+        classification_result = classify_image(file_content)
+        
+        # Get related food suggestions if foods were detected
+        detected_food_names = [food["name"] for food in classification_result.get("foods_detected", [])]
+        related_foods = get_related_foods(detected_food_names) if detected_food_names else []
+        
+        # Add related foods to the result
+        classification_result["related_foods"] = related_foods
+        
+        return classification_result
+        
+    except ValueError as e:
+        # Handle image processing errors
+        raise HTTPException(
+            status_code=400,
+            detail=f"Image processing error: {str(e)}"
+        )
+    except Exception as e:
+        # Handle other classification errors
+        raise HTTPException(
+            status_code=500,
+            detail=f"Classification service error: {str(e)}"
+        )
+
+
+@app.get("/food-categories", tags=["Food Classification"])
+async def get_food_categories():
+    """
+    Get list of Nigerian food categories and examples.
+    
+    Returns information about different categories of Nigerian foods
+    that can be detected by the classification system.
+    """
+    categories = {
+        "main_dishes": {
+            "description": "Primary meals and dishes",
+            "examples": ["Jollof Rice", "Fried Rice", "Pounded Yam with Soup", "Amala and Ewedu"]
+        },
+        "soups": {
+            "description": "Traditional Nigerian soups",
+            "examples": ["Egusi Soup", "Ogbono Soup", "Bitter Leaf Soup", "Afang Soup", "Pepper Soup"]
+        },
+        "snacks": {
+            "description": "Light meals and finger foods",
+            "examples": ["Suya", "Akara", "Moi Moi", "Chin Chin", "Puff Puff"]
+        },
+        "side_dishes": {
+            "description": "Accompanying dishes and sides",
+            "examples": ["Plantain", "Bole", "Yam", "Sweet Potato"]
+        },
+        "drinks": {
+            "description": "Traditional beverages",
+            "examples": ["Palm Wine", "Zobo", "Kunu", "Tiger Nut Drink"]
+        }
+    }
+    
+    return {
+        "categories": categories,
+        "total_categories": len(categories),
+        "message": "Nigerian food categories supported by the classification system"
+    }
