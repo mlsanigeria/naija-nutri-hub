@@ -41,7 +41,7 @@
       h1 {
         font-size: 22px;
         margin: 0 0 10px;
-        color: #FF8243;
+        color: #ffffff;
       }
 
       p {
@@ -50,20 +50,23 @@
         color: #ffffff;
       }
 
-      .cta-btn {
+      .btn {
         display: inline-block;
-        background: #FF8243;
-        color: #121212 !important;
-        text-decoration: none;
-        padding: 12px 28px;
-        border-radius: 6px;
-        font-weight: bold;
-        margin-top: 20px;
+        text-align: center;
+        border: 1px solid #FC865C;
+        color: #ffffff;
+        background: transparent;
+        font-weight: 600;
         font-size: 15px;
+        padding: 10px 20px;
+        border-radius: 6px;
+        text-decoration: none;
+        margin-top: 20px;
       }
 
-      .cta-btn:hover {
-        background: #e67135;
+      .btn:hover {
+        background: #FC865C;
+        color: #ffffff;
       }
 
       .note {
@@ -72,20 +75,21 @@
       }
 
       .footer {
-        text-align: center;
         font-size: 12px;
         color: #dddddd;
-        margin-top: 24px;
-        padding-top: 10px;
+        padding-top: 18px;
+        border-top: 1px solid #444444;
+        margin-top: 18px;
+        text-align: center;
       }
 
       .brand {
         font-weight: 700;
-        color: #FF8243;
+        color: #FC865C;
       }
 
       a.support {
-        color: #FF8243;
+        color: #FC865C;
         text-decoration: none;
       }
 
@@ -94,23 +98,26 @@
           vertical-align: top !important;
           padding-top: 12px !important;
         }
+
         .container {
           padding: 16px;
         }
+
         .card {
           padding: 18px;
         }
+
         h1 {
           font-size: 20px;
         }
-        .cta-btn {
+
+        .btn {
           font-size: 14px;
-          padding: 10px 20px;
+          padding: 8px 18px;
         }
       }
     </style>
   </head>
-
   <body>
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#282828;width:100%;min-height:100vh;">
       <tr style="height:100%;">
@@ -119,39 +126,37 @@
             <tr>
               <td>
                 <div class="card" role="article" aria-label="Welcome to {{app_name}}">
-                  <h1>Welcome to {{app_name}} 👋</h1>
-                  <p>Hi <span style="color:#FF8243;">{{user_name}}</span>,</p>
+                  <h1>Welcome aboard, {{user_name}} 👋</h1>
                   <p>
-                    At <span class="brand">{{app_name}}</span>, we help you
-                    <strong>take a picture of your food, learn it, and make it better</strong>.
-                  </p>
-                  <p>
-                    You're just one step away from unlocking personalized nutrition insights tailored to you.
+                    We're excited to have you join <span class="brand">{{app_name}}</span>!
+                    You’re all set to explore and make the most of what we offer.
                   </p>
 
-                  <div style="text-align:center; margin: 30px 0;">
-                    <a href="{{get_started_link}}" class="cta-btn">Get Started</a>
+                  <p>
+                    Click below to get started and personalize your experience.
+                  </p>
+
+                  <div style="text-align:center;">
+                    <a href="{{dashboard_url}}" class="btn">Get Started</a>
                   </div>
 
-                  <p class="note">
-                    If the button above doesn’t work, copy and paste this link into your browser:<br />
-                    <a href="{{get_started_link}}" class="support">{{get_started_link}}</a>
+                  <p class="note" style="margin-top:20px;">
+                    If you didn’t sign up for this account, please contact us at
+                    <a class="support" href="mailto:{{support_email}}">{{support_email}}</a>.
                   </p>
 
-                  <p style="margin-top:20px;">
-                    Need help? Reach us at <a href="mailto:{{support_email}}" class="support">{{support_email}}</a>.
-                  </p>
-
-                  <p style="margin-top:20px;">
-                    Warm regards,<br />
-                    {{team_signature or "The Naija-Nutri-Hub Team"}}
-                  </p>
+                  <div class="footer">
+                    <div>
+                      <span style="color:#FC865C;">{{app_name}}</span> • Need help?
+                      <a class="support" href="mailto:{{support_email}}">Contact support</a>
+                    </div>
+                  </div>
                 </div>
-
-                <!-- Footer outside card -->
-                <div class="footer">
-                  © 2025 <span class="brand">{{app_name}}</span>. All rights reserved.
-                </div>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding-top:14px;text-align:center;color:#FC865C;font-size:12px;">
+                © 2025 {{app_name}}. <span style="color:#dddddd;">All rights reserved.</span>
               </td>
             </tr>
           </table>
