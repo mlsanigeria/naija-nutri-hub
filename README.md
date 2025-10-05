@@ -39,7 +39,7 @@ Thank you to all our fantastic contributors for their hard work and dedication! 
 
 | S/N | Rank || Contributor | Merged PRs |
 |--| ---- | -- |----------- | ---------- |
-| 1 | 🥇 | <img src='https://avatars.githubusercontent.com/u/190011583?v=4' alt='Avatar' width='30' height='30'> | [Pritesh-30](https://github.com/Pritesh-30) | 2 |
+| 1 | 🥇 | <img src='https://avatars.githubusercontent.com/u/190011583?v=4' alt='Avatar' width='30' height='30'> | [Pritesh-30](https://github.com/Pritesh-30) | 3 |
 | 2 | 🥈 | <img src='https://avatars.githubusercontent.com/u/182611319?v=4' alt='Avatar' width='30' height='30'> | [aneeshsunganahalli](https://github.com/aneeshsunganahalli) | 1 |
 | 3 | 🥈 | <img src='https://avatars.githubusercontent.com/u/144631176?v=4' alt='Avatar' width='30' height='30'> | [kingsley-sama](https://github.com/kingsley-sama) | 1 |
 | 4 | 🥈 | <img src='https://avatars.githubusercontent.com/u/178784329?v=4' alt='Avatar' width='30' height='30'> | [lck6055](https://github.com/lck6055) | 1 |
