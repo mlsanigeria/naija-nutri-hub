@@ -1,138 +1,162 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Welcome to {{app_name}}</title>
-  <style>
-    /* Reset styles for better email client compatibility */
-    /* Removed -webkit- and -ms- text-size-adjust */
-    table, td { mso-table-lspace: 0pt; mso-table-rspace: 0pt; }
-    img { -ms-interpolation-mode: bicubic; } /* Kept for Outlook image rendering */
-    
-    /* Dark Theme Styles */
-    body {
-      margin: 0;
-      padding: 0;
-      font-family: 'Inter', Arial, sans-serif;
-      background-color: #121212; /* Dark theme background */
-      color: #EDEDED; /* Light text for contrast */
-    }
-    .container-table {
-      max-width: 600px;
-      margin: 0 auto; /* Center the table */
-      background-color: #1A1A1A; /* Slightly lighter dark card background */
-      border-radius: 10px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.4);
-    }
-    .header h1 {
-      color: #FF8243; /* Brand orange */
-      font-size: 28px;
-      margin-bottom: 5px;
-    }
-    .header p {
-      color: #EDEDED;
-      font-size: 16px;
-      margin: 0;
-    }
-    .content p {
-      line-height: 1.6;
-      font-size: 15px;
-      margin: 12px 0;
-      color: #EDEDED;
-    }
-    .cta-btn {
-      display: inline-block;
-      background-color: #FF8243;
-      color: #121212;
-      text-decoration: none;
-      padding: 12px 24px;
-      border-radius: 6px;
-      font-weight: bold;
-      margin-top: 20px;
-    }
-    .cta-btn:hover {
-      background-color: #e67135;
-    }
-    .fallback {
-      font-size: 13px;
-      margin-top: 18px;
-      color: #bdbdbd;
-    }
-    .fallback a {
-      color: #FF8243;
-    }
-    .footer {
-      font-size: 12px;
-      color: #888888;
-      padding: 20px;
-      border-top: 1px solid #2a2a2a;
-    }
-    /* Responsive Styles */
-    @media only screen and (max-width: 600px) {
-      .container-table { width: 100% !important; border-radius: 0; }
-      .content-padding { padding: 20px !important; }
-      .cta-td { text-align: center !important; }
-      .cta-btn { width: 90% !important; text-align: center !important; }
-    }
-  </style>
-</head>
-<body style="margin: 0; padding: 0; background-color: #121212;">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Welcome to {{app_name}}</title>
+    <style>
+      :root {
+        color-scheme: dark;
+      }
 
-  <table border="0" cellpadding="0" cellspacing="0" width="100%" bgcolor="#121212">
-    <tr>
-      <td align="center" style="padding: 30px 10px;">
+      html, body { height: 100%; }
+      body {
+        margin: 0;
+        padding: 0;
+        background: #282828;
+        color: #ffffff;
+        font-family: Arial, Helvetica, sans-serif;
+        -webkit-text-size-adjust: 100%;
+        -ms-text-size-adjust: 100%;
+      }
 
-        <table border="0" cellpadding="0" cellspacing="0" width="100%" class="container-table" style="max-width: 600px; border-collapse: separate;">
-          
-          <tr>
-            <td align="center" class="header" style="padding: 30px 20px 10px;">
-              <h1 style="color: #FF8243; font-size: 28px; margin: 0 0 5px 0;">Welcome to {{app_name}} 👋</h1>
-              <p style="color: #EDEDED; font-size: 16px; margin: 0;">We’re glad to have you here, {{user_name}}!</p>
-            </td>
-          </tr>
-          
-          <tr>
-            <td align="left" class="content-padding" style="padding: 25px 30px 35px;">
-              <p style="line-height: 1.6; font-size: 15px; margin: 12px 0; color: #EDEDED;">
-                At {{app_name}}, we help you <strong>take a picture of your food, learn it, and make it better</strong>.
-              </p>
-              <p style="line-height: 1.6; font-size: 15px; margin: 12px 0; color: #EDEDED;">
-                You're just one step away from unlocking personalized nutrition insights tailored to you.
-              </p>
+      .container {
+        width: 100%;
+        max-width: 600px;
+        margin: 0 auto;
+        padding: 24px;
+      }
 
-              <table border="0" cellpadding="0" cellspacing="0" role="presentation" style="width: 100%;">
-                <tr>
-                  <td align="center" class="cta-td" style="padding-top: 20px;">
-                    <a href="{{get_started_link}}" class="cta-btn" style="display: inline-block; background-color: #FF8243; color: #121212; text-decoration: none; padding: 12px 24px; border-radius: 6px; font-weight: bold; font-size: 16px;">
-                      Get Started
-                    </a>
-                  </td>
-                </tr>
-              </table>
-              
-              <p class="fallback" style="font-size: 13px; margin-top: 30px; margin-bottom: 0; color: #bdbdbd;">
-                If the button above doesn’t work, copy and paste this link into your browser:<br />
-                <a href="{{get_started_link}}" style="color: #FF8243;">{{get_started_link}}</a>
-              </p>
+      .outer-cell {
+        padding: 40px 0;
+      }
 
-              <p style="line-height: 1.6; font-size: 15px; margin: 12px 0; color: #EDEDED; padding-top: 15px;">Need help? Reach us at <a href="mailto:{{support_email}}" style="color: #FF8243;">{{support_email}}</a>.</p>
+      .card {
+        background: #282828;
+        border-radius: 8px;
+        padding: 24px;
+        border: 1px solid #444444;
+      }
 
-              <p style="line-height: 1.6; font-size: 15px; margin: 12px 0; color: #EDEDED; padding-top: 15px;">Warm regards,<br />
-              {{team_signature or "The Naija-Nutri-Hub Team"}}</p>
-            </td>
-          </tr>
-          
-          <tr>
-            <td align="center" class="footer" style="font-size: 12px; color: #888888; padding: 20px; border-top: 1px solid #2a2a2a;">
-              &copy; {{app_name}} | Eat Smart. Live Better.
-            </td>
-          </tr>
+      h1 {
+        font-size: 22px;
+        margin: 0 0 10px;
+        color: #FF8243;
+      }
 
-        </table>
+      p {
+        margin: 0 0 14px;
+        line-height: 1.5;
+        color: #ffffff;
+      }
 
-      </td>
-    </tr>
-  </table>
-</body>
+      .cta-btn {
+        display: inline-block;
+        background: #FF8243;
+        color: #121212 !important;
+        text-decoration: none;
+        padding: 12px 28px;
+        border-radius: 6px;
+        font-weight: bold;
+        margin-top: 20px;
+        font-size: 15px;
+      }
+
+      .cta-btn:hover {
+        background: #e67135;
+      }
+
+      .note {
+        font-size: 13px;
+        color: #dddddd;
+      }
+
+      .footer {
+        text-align: center;
+        font-size: 12px;
+        color: #dddddd;
+        margin-top: 24px;
+        padding-top: 10px;
+      }
+
+      .brand {
+        font-weight: 700;
+        color: #FF8243;
+      }
+
+      a.support {
+        color: #FF8243;
+        text-decoration: none;
+      }
+
+      @media only screen and (max-width: 420px) {
+        .outer-cell {
+          vertical-align: top !important;
+          padding-top: 12px !important;
+        }
+        .container {
+          padding: 16px;
+        }
+        .card {
+          padding: 18px;
+        }
+        h1 {
+          font-size: 20px;
+        }
+        .cta-btn {
+          font-size: 14px;
+          padding: 10px 20px;
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#282828;width:100%;min-height:100vh;">
+      <tr style="height:100%;">
+        <td class="outer-cell" align="center" valign="middle">
+          <table role="presentation" class="container" cellpadding="0" cellspacing="0">
+            <tr>
+              <td>
+                <div class="card" role="article" aria-label="Welcome to {{app_name}}">
+                  <h1>Welcome to {{app_name}} 👋</h1>
+                  <p>Hi <span style="color:#FF8243;">{{user_name}}</span>,</p>
+                  <p>
+                    At <span class="brand">{{app_name}}</span>, we help you
+                    <strong>take a picture of your food, learn it, and make it better</strong>.
+                  </p>
+                  <p>
+                    You're just one step away from unlocking personalized nutrition insights tailored to you.
+                  </p>
+
+                  <div style="text-align:center; margin: 30px 0;">
+                    <a href="{{get_started_link}}" class="cta-btn">Get Started</a>
+                  </div>
+
+                  <p class="note">
+                    If the button above doesn’t work, copy and paste this link into your browser:<br />
+                    <a href="{{get_started_link}}" class="support">{{get_started_link}}</a>
+                  </p>
+
+                  <p style="margin-top:20px;">
+                    Need help? Reach us at <a href="mailto:{{support_email}}" class="support">{{support_email}}</a>.
+                  </p>
+
+                  <p style="margin-top:20px;">
+                    Warm regards,<br />
+                    {{team_signature or "The Naija-Nutri-Hub Team"}}
+                  </p>
+                </div>
+
+                <!-- Footer outside card -->
+                <div class="footer">
+                  © 2025 <span class="brand">{{app_name}}</span>. All rights reserved.
+                </div>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
 </html>
