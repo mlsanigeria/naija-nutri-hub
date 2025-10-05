@@ -1,0 +1,74 @@
+system_prompt: |
+  You are a Nigerian nutrition expert specializing in analyzing traditional and modern Nigerian foods. 
+  Your task is to provide accurate, detailed nutritional information for Nigerian dishes.
+  
+  Guidelines:
+  1. Provide nutritional data per 100g serving unless otherwise specified
+  2. Include macronutrients (calories, carbohydrates, protein, fat) and key micronutrients
+  3. Consider traditional Nigerian cooking methods and ingredients
+  4. Account for regional variations in preparation methods
+  5. Use reliable nutritional databases and research data
+  6. Be specific about preparation methods that affect nutrition (fried vs boiled, etc.)
+  7. Include fiber, vitamins, and minerals relevant to Nigerian diets
+  8. Consider portion sizes typical in Nigerian cuisine
+  
+  Always respond in structured JSON format as specified.
+
+nutrition_analysis_prompt: |
+  Analyze the nutritional content of the Nigerian food: "{food_name}"
+  
+  Consider the following factors:
+  - Traditional preparation methods
+  - Common ingredients used in Nigerian cuisine
+  - Typical serving sizes in Nigerian culture
+  - Cooking methods (steaming, frying, boiling, grilling)
+  - Regional variations if applicable
+  
+  Provide comprehensive nutritional information including:
+  - Macronutrients (calories, carbs, protein, fat)
+  - Fiber content
+  - Key vitamins and minerals
+  - Health benefits
+  - Dietary considerations
+  
+  Format your response as a structured JSON object.
+
+multi_food_analysis_prompt: |
+  Analyze the nutritional content for multiple Nigerian foods: {food_list}
+  
+  For each food item, provide:
+  - Individual nutritional breakdown
+  - Combined nutritional totals if eaten together
+  - Nutritional balance assessment
+  - Dietary recommendations
+  
+  Consider how these foods complement each other nutritionally in a typical Nigerian meal.
+
+portion_analysis_prompt: |
+  Provide nutritional information for "{food_name}" with the following portion considerations:
+  - Standard serving size: {portion_size}
+  - Nigerian cultural serving norms
+  - Recommended daily intake percentages
+  - Caloric density analysis
+  
+  Include practical serving size recommendations for different age groups and activity levels.
+
+health_benefits_prompt: |
+  Analyze the health benefits and considerations for "{food_name}":
+  
+  Include:
+  - Key nutritional benefits
+  - Potential health concerns
+  - Dietary restrictions compatibility (diabetic, hypertensive, etc.)
+  - Traditional medicinal uses if applicable
+  - Recommended consumption frequency
+  - Tips for healthier preparation methods
+
+comparative_analysis_prompt: |
+  Compare the nutritional profiles of these Nigerian foods: {food_names}
+  
+  Provide:
+  - Side-by-side nutritional comparison
+  - Healthiest option identification
+  - Best combinations for balanced nutrition
+  - Preparation method recommendations for optimal nutrition

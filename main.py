@@ -17,6 +17,14 @@ from auth.service import resend_otp_service
 # Food Classification
 from src.food_classifier.image_classification import classify_image, get_related_foods
 
+# Nutritional Facts
+from src.nutritional_facts.nutritional_facts import (
+    generate_nutrition_facts,
+    analyze_complete_meal,
+    compare_foods,
+    get_nutrition_database_foods
+)
+
 # Authentication
 from auth.mail import send_email_otp
 from auth.service import (
@@ -40,6 +48,11 @@ from schemas.schema import (
     UserCreate,
     FoodClassificationResponse,
     ErrorResponse,
+    NutritionalFactsResponse,
+    MealNutritionRequest,
+    MealNutritionResponse,
+    FoodComparisonRequest,
+    FoodComparisonResponse,
 )
 from config.database import otp_record, user_auth
 
@@ -361,3 +374,178 @@ async def get_food_categories():
         "total_categories": len(categories),
         "message": "Nigerian food categories supported by the classification system"
     }
+
+
+# --- Nutritional Facts Endpoints ---
+@app.get("/nutrition/{food_name}",
+         response_model=NutritionalFactsResponse,
+         responses={400: {"model": ErrorResponse}, 500: {"model": ErrorResponse}},
+         tags=["Nutritional Facts"])
+async def get_nutrition_facts(
+    food_name: str,
+    serving_size: float = 100,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Get comprehensive nutritional facts for a Nigerian food.
+    
+    This endpoint provides detailed nutritional information including macronutrients,
+    micronutrients, health benefits, and AI-generated insights for Nigerian foods.
+    
+    - **food_name**: Name of the Nigerian food (e.g., "Jollof Rice", "Egusi Soup")
+    - **serving_size**: Serving size in grams (default: 100g)
+    - **Returns**: Complete nutritional analysis with AI insights and recommendations
+    """
+    try:
+        result = generate_nutrition_facts(food_name, serving_size)
+        
+        if "error" in result:
+            raise HTTPException(
+                status_code=400,
+                detail=result["error"]
+            )
+        
+        return result
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to generate nutritional facts: {str(e)}"
+        )
+
+
+@app.post("/nutrition/meal-analysis",
+          response_model=MealNutritionResponse,
+          responses={400: {"model": ErrorResponse}, 500: {"model": ErrorResponse}},
+          tags=["Nutritional Facts"])
+async def analyze_meal_nutrition(
+    meal_request: MealNutritionRequest,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Analyze nutritional content of a complete Nigerian meal.
+    
+    This endpoint analyzes the total nutritional content of a meal consisting of
+    multiple Nigerian food items with specified serving sizes.
+    
+    - **foods**: List of food items with their serving sizes
+    - **Returns**: Complete meal nutritional analysis with cultural context and recommendations
+    """
+    try:
+        # Convert request to the format expected by the analysis function
+        foods_list = [{"name": item.name, "serving_size": item.serving_size} for item in meal_request.foods]
+        
+        result = analyze_complete_meal(foods_list)
+        
+        if "error" in result:
+            raise HTTPException(
+                status_code=400,
+                detail=result["error"]
+            )
+        
+        return result
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to analyze meal nutrition: {str(e)}"
+        )
+
+
+@app.post("/nutrition/compare-foods",
+          response_model=FoodComparisonResponse,
+          responses={400: {"model": ErrorResponse}, 500: {"model": ErrorResponse}},
+          tags=["Nutritional Facts"])
+async def compare_food_nutrition(
+    comparison_request: FoodComparisonRequest,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Compare nutritional profiles of multiple Nigerian foods.
+    
+    This endpoint provides a side-by-side comparison of nutritional information
+    for multiple Nigerian foods, helping users make informed dietary choices.
+    
+    - **foods**: List of food names to compare (minimum 2, maximum 5)
+    - **Returns**: Comparative analysis with recommendations for different dietary goals
+    """
+    if len(comparison_request.foods) > 5:
+        raise HTTPException(
+            status_code=400,
+            detail="Maximum 5 foods can be compared at once"
+        )
+    
+    try:
+        result = compare_foods(comparison_request.foods)
+        
+        if "error" in result:
+            raise HTTPException(
+                status_code=400,
+                detail=result["error"]
+            )
+        
+        return result
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to compare foods: {str(e)}"
+        )
+
+
+@app.get("/nutrition/database-foods",
+         tags=["Nutritional Facts"])
+async def get_available_nutrition_foods():
+    """
+    Get list of Nigerian foods available in the nutrition database.
+    
+    Returns a list of all Nigerian foods for which nutritional information
+    is available in the local database.
+    """
+    try:
+        foods = get_nutrition_database_foods()
+        return {
+            "available_foods": foods,
+            "total_foods": len(foods),
+            "message": f"Found {len(foods)} Nigerian foods in the nutrition database"
+        }
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to retrieve food list: {str(e)}"
+        )
+
+
+@app.get("/nutrition/health-analysis/{food_name}",
+         tags=["Nutritional Facts"])
+async def get_food_health_analysis(
+    food_name: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Get health benefits and dietary considerations for a Nigerian food.
+    
+    This endpoint provides detailed health analysis including benefits,
+    concerns, and compatibility with different dietary restrictions.
+    
+    - **food_name**: Name of the Nigerian food
+    - **Returns**: Health analysis with dietary compatibility information
+    """
+    try:
+        from src.nutritional_facts.nutrition_tools import get_health_analysis
+        result = get_health_analysis(food_name)
+        
+        return {
+            "food_name": food_name,
+            "health_analysis": result,
+            "dietary_advice": {
+                "general": "Consult with a healthcare provider for personalized dietary advice",
+                "source": "Based on traditional nutritional knowledge and research"
+            }
+        }
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to get health analysis: {str(e)}"
+        )
