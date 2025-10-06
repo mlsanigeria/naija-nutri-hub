@@ -1,3 +1,6 @@
+import sys, pathlib
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
+
 from auth.mail import send_email_welcome
 
 def test_send_welcome_email():
