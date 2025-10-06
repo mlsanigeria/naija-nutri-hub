@@ -20,3 +20,11 @@ def send_email_otp(subject, body, receiver, attachment=False):
 
     # ...
     return
+
+def send_email_welcome(subject, body, receiver, attachment=False):
+    # Create a secure SSL context
+    msg = EmailMessage()
+
+    # ...
+    return
+    
