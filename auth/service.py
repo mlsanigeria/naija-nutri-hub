@@ -117,10 +117,15 @@ def resend_otp_service(email: str):
     }
     otp_record.insert_one(otp_data)
 
+    # Get user info for personalized email
+    user_name = f"{user.get('firstname', '')} {user.get('lastname', '')}".strip() or "User"
+
+    # Send OTP email using the template
     send_email_otp(
-        subject="Your OTP Code",
-        body=f"Your OTP is {otp_code}. It will expire in 5 minutes.",
-        receiver=email
+        receiver_email=email,
+        otp_code=otp_code,
+        expiry_minutes=5,
+        user_name=user_name
     )
 
     return {"message": "OTP resent successfully", "email": email}
