@@ -142,10 +142,7 @@ naija-nutri-hub/
 **Running the Project Locally:**
 ```bash
 # Start the FastAPI backend server
-python main.py
-
-# Or run a specific experimentation notebook
-jupyter notebook experimentation/food-classification.ipynb
+uvicorn main:app --reload
 ```
 
 **PR Checklist:**
