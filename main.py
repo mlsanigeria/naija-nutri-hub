@@ -106,14 +106,61 @@ def index():
 # Create new user
 @app.post("/sign-up", tags=["Authentication"])
 def sign_up_user(user_data: UserCreate):
-    """Handles new user registration."""
+    """Handles new user registration and sends OTP for verification."""
     if user_exists_email(user_data.email):
         raise HTTPException(status_code=400, detail="Email already registered")
     if user_exists_username(user_data.username):
         raise HTTPException(status_code=400, detail="Username already taken")
 
+    # Create the user
     new_user = create_user(user_data)
-    return {"message": "User created successfully!", "user": new_user}
+    
+    try:
+        # Generate OTP
+        otp_code = generate_otp()
+        
+        # Store OTP in database
+        otp_data = {
+            "email": user_data.email,
+            "otp": otp_code,
+            "created_at": datetime.now(timezone.utc),
+        }
+        otp_record.insert_one(otp_data)
+        
+        # Send OTP email
+        user_name = f"{user_data.firstname} {user_data.lastname}".strip()
+        email_result = send_email_otp(
+            receiver_email=user_data.email,
+            otp_code=otp_code,
+            expiry_minutes=5,
+            user_name=user_name
+        )
+        
+        # Check if email sending failed
+        if not email_result.get("success", False):
+            # Rollback: delete the OTP record if email fails
+            otp_record.delete_one({"email": user_data.email})
+            raise HTTPException(
+                status_code=500, 
+                detail=f"User created but failed to send OTP email: {email_result.get('message', 'Unknown error')}"
+            )
+        
+        return {
+            "message": "User created successfully! OTP sent to your email.",
+            "user": new_user,
+            "email_sent": True
+        }
+        
+    except HTTPException:
+        # Re-raise HTTPException as-is
+        raise
+    except Exception as e:
+        # Handle any unexpected errors
+        otp_record.delete_one({"email": user_data.email})
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error sending OTP: {str(e)}"
+        )
 
 
 @app.post("/verify", tags=["Authentication"])
@@ -249,4 +296,6 @@ def reset_password(req: ResetPasswordRequest):
 
     otp_record.delete_one({"email": req.email})
     return {"message": "Password reset successfully"}
+
+
 
