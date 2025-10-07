@@ -14,3 +14,9 @@ Here are WhatsApp communities specific to different universities. Join the one a
 | University of Benin | https://chat.whatsapp.com/F3d40fIigvDHSbkoOleN1q |
 | Obafemi Awolowo University | https://chat.whatsapp.com/LpokXO6VDSeLNGi6Eln1c2  | 
 | Bells University of Technology | https://chat.whatsapp.com/GdsFKs7Oi8DIfWSW0LOVrR |
+
+## GitHub Campus Experts (UNILAG) Community
+
+Join the GitHub Campus Experts (UNILAG) WhatsApp community to connect with campus leads, project maintainers and contributors working on Naija Nutri Hub and other campus initiatives.
+
+**WhatsApp:** https://chat.whatsapp.com/IgY7V6RXFcwFkhLlnvOGKq

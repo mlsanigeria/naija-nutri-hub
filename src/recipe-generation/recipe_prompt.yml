@@ -1,0 +1,47 @@
+description: "Generate a structured Nigerian recipe with ingredients and steps."
+
+prompt: |
+  You are a professional Nigerian chef assistant.
+  Generate a structured, detailed recipe for {{ food_name }} using the provided context.
+
+  Context:
+  - Description: {{ description }}
+  - Main ingredients: {{ main_ingredients }}
+  - Region: {{ region }}
+  - Spice level: {{ spice_level }}
+
+  Requirements:
+  - Include ingredients with quantities and measurements
+  - Include a list of clear, step-by-step cooking instructions
+  - Include estimated preparation time, cook time, total time, and serving size
+  - Include approximate calories per serving (estimate)
+  - Only use ingredients typical for Nigerian cuisine or listed in main_ingredients
+  - Ensure all measurements use metric or standard cooking units
+  - Always respond in VALID JSON only — no markdown, no extra explanation
+
+  Output JSON structure:
+  {
+    "food_name": "{{ food_name }}",
+    "description": "{{ description }}",
+    "region": "{{ region }}",
+    "spice_level": "{{ spice_level }}",
+    "servings": 4,
+    "prep_time": 15,
+    "cook_time": 30,
+    "total_time": 45,
+    "calories_per_serving": 350,
+    "ingredients": [
+      {"name": "Rice", "quantity": "2 cups"},
+      {"name": "Tomatoes", "quantity": "4 large"}
+    ],
+    "steps": [
+      "Step 1: ...",
+      "Step 2: ..."
+    ],
+    "tips": [
+      "Tip 1: ...",
+      "Tip 2: ..."
+    ],
+    "source": "AI + Dataset"
+  }
+
