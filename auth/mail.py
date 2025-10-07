@@ -69,11 +69,24 @@ def send_email_otp(receiver_email, otp_code, expiry_minutes=10, user_name="User"
     except Exception as e:
         return {"success": False, "message": f"Error sending OTP: {str(e)}"}
 
-def send_email_welcome(subject, body, receiver, attachment=False):
+def send_email_welcome(user_name, receiver, attachment=False):
     """
     Sends a Welcome Email to the user after successful registration.
     Uses the HTML template from auth/html_email_themes/welcome.html
+    
+    Args:
+        user_name (str): The name of the user to personalize the email.
+        receiver (str): The email address of the recipient.
+        attachment (str or bool): Path to a file to attach, or False for no attachment.
     """
+
+    subject = "Welcome to Naija Nutri Hub!"
+    body = {
+        "user_name": user_name,
+        "app_name": "Naija Nutri Hub",
+        "dashboard_url": "https://naijanutri.com/dashboard",
+        "support_email": ADMIN_EMAIL
+    }
     try:
         # --- Load HTML Template ---
         template_path = Path(__file__).parent / "html_email_themes" / "onboarding.html"
