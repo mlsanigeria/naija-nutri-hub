@@ -179,9 +179,9 @@ def verify_user_account(otp_data: OTPVerifyRequest):
             detail="Incorrect OTP",
         ) 
     
-    # Check for 10 minutes otp expiry 
+    # Check for 5 minutes otp expiry 
     otp_age = datetime.now(timezone.utc) - otp_rec["created_at"]
-    OTP_EXPIRY_MINUTES = 10
+    OTP_EXPIRY_MINUTES = 5
     
     if otp_age > timedelta(minutes=OTP_EXPIRY_MINUTES):
         # Delete expired OTP
