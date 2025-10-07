@@ -90,8 +90,68 @@ Welcome to the **Naija Nutri Hub** project repository for ML/AI Engineering and 
 
    After pushing your changes, submit a pull request to merge them into the main repository. Make sure to include a clear and concise description of what your contribution entails.
 
-## Project Structure:
+## Project Structure
 
+### Directory Tree
+```
+naija-nutri-hub/
+├── main.py                    # FastAPI backend server entry point
+├── requirements.txt           # Python dependencies
+├── README.md                 # Project overview and setup guide
+├── .env.example              # Environment variables template
+├── auth/                     # Authentication and email services
+├── config/                   # Database and app configuration
+├── schemas/                  # Data models and validation schemas
+├── src/                      # Core AI/ML features and tools
+│   ├── food-classifier/      # Food image classification module
+│   ├── nutritional-facts/    # Nutrition analysis module
+│   ├── purchase-location/    # Store/market finder module
+│   └── recipe-generation/    # Recipe creation module
+├── experimentation/          # Jupyter notebooks for R&D
+├── tests/                    # Unit tests and test utilities
+└── naija-nutri-hub/         # Virtual environment (auto-generated)
+```
+
+### Folder Descriptions & Example Contributions
+
+- **`auth/`** - Handles user authentication, OTP verification, and email services  
+  *Example: Add SMS OTP option alongside email verification*
+
+- **`config/`** - Database connections and application configuration  
+  *Example: Add Redis caching configuration for better performance*
+
+- **`schemas/`** - Pydantic models for API request/response validation  
+  *Example: Create new schema for user dietary preferences*
+
+- **`src/`** - Core AI/ML modules for food analysis and recommendations  
+  *Example: Improve food classification accuracy or add new cuisine types*
+
+- **`experimentation/`** - Research notebooks for testing new ML approaches  
+  *Example: Create notebook exploring ingredient substitution algorithms*
+
+- **`tests/`** - Automated tests ensuring code quality and functionality  
+  *Example: Add integration tests for the recipe generation API*
+
+### Quick Start for Contributors
+
+**3-Step Contribution Flow:**
+1. **Claim** - Comment on an issue to get it assigned to you
+2. **Implement** - Create a feature branch and develop your solution
+3. **Submit** - Open a Pull Request with clear description and tests
+
+**Running the Project Locally:**
+```bash
+# Start the FastAPI backend server
+python main.py
+
+# Or run a specific experimentation notebook
+jupyter notebook experimentation/food-classification.ipynb
+```
+
+**PR Checklist:**
+- [ ] Code follows project style and includes docstrings
+- [ ] Tests added/updated and all tests pass
+- [ ] Clear commit messages and PR description provided
 
 ## How You Can Contribute:
 
