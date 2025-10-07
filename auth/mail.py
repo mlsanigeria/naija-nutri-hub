@@ -27,6 +27,13 @@ def send_email_otp(receiver_email, otp_code, expiry_minutes=10, user_name="User"
     Returns:
         dict: Success/failure message
     """
+    # Skip real email sending during tests
+    if os.getenv("ENVIRONMENT") == "test":
+        return {
+            "success": True,
+            "message": f"[TEST MODE] OTP simulated for {receiver_email}"
+        }
+        
     # Validate required environment variables
     if not ADMIN_EMAIL or not ADMIN_EMAIL_PASSWORD or not SERVER:
         return {
@@ -79,7 +86,10 @@ def send_email_welcome(user_name, receiver, attachment=False):
         receiver (str): The email address of the recipient.
         attachment (str or bool): Path to a file to attach, or False for no attachment.
     """
-
+    # Skip real email sending during tests
+    if os.getenv("ENVIRONMENT") == "test":
+        return {"status": "success", "message": f"[TEST MODE] Welcome email simulated for {receiver}"}
+        
     subject = "Welcome to Naija Nutri Hub!"
     body = {
         "user_name": user_name,
