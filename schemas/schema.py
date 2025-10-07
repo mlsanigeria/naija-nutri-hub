@@ -46,7 +46,7 @@ class ResetPasswordRequest(BaseModel):
 # Endpoint-specific payloads
 class ClassificationPayload(BaseModel):
     email: EmailStr
-    image: Binary
+    image: Binary # Expecting image file in binary format
     timestamp: datetime = Field(default_factory=datetime.utcnow)
 
 
