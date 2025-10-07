@@ -132,7 +132,7 @@ def sign_up_user(user_data: UserCreate):
         email_result = send_email_otp(
             receiver_email=user_data.email,
             otp_code=otp_code,
-            expiry_minutes=10,
+            expiry_minutes=5,
             user_name=user_name
         )
         
@@ -296,5 +296,6 @@ def reset_password(req: ResetPasswordRequest):
 
     otp_record.delete_one({"email": req.email})
     return {"message": "Password reset successfully"}
+
 
 
