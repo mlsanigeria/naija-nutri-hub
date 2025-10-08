@@ -44,10 +44,12 @@ class ResetPasswordRequest(BaseModel):
     new_password: str = Field(min_length=6, max_length=20)
 
 # Endpoint-specific payloads
-class ClassificationPayload(BaseModel):
-    email: EmailStr
-    image: Binary # Expecting image file in binary format
-    timestamp: datetime = Field(default_factory=datetime.utcnow)
+
+# Sample structure for storing classification request in db
+# class ClassificationPayload(BaseModel):
+#     email: EmailStr
+#     image: Binary # Expecting image file in binary format
+#     timestamp: datetime = Field(default_factory=datetime.utcnow)
 
 
 class RecipePayload(BaseModel):
