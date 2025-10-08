@@ -6,6 +6,7 @@ import json
 from openai import AzureOpenAI
 from dotenv import load_dotenv
 from pathlib import Path
+from tavily import TavilyClient
 
 # --- Configuration (Final, Professional Version) ---
 dotenv_path = Path(__file__).resolve().parents[2] / '.env'
@@ -31,6 +32,17 @@ client = AzureOpenAI(
     api_version=api_version # <-- Adding the required API version
 )
 
+# --- Initialize Spoonacular API Client ---
+spoonacular_key = os.getenv("SPOONACULAR_API_KEY")
+
+# --- Initialize Tavily Search Client ---
+tavily_key = os.getenv("TAVILY_API_KEY")
+
+if not tavily_key:
+    raise ValueError("Tavily API key not found. Please set TAVILY_API_KEY in your .env file.")
+
+tavily_client = TavilyClient(api_key=tavily_key)
+
 # --- Helper Function to Load the Prompt ---
 def load_prompt_template():
     """Loads the recipe generation prompt from the YAML file."""
@@ -39,35 +51,62 @@ def load_prompt_template():
         prompt_data = yaml.safe_load(f)
     return prompt_data['recipe_generation_prompt']
 
-# --- Main Recipe Generation Tool ---
+# --- Main Grounded Recipe Generation Tool (Tavily Version) ---
 def generate_recipe(food_name: str):
     """
-    Generates a structured recipe for a given food name using the configured Azure OpenAI deployment.
+    Generates a structured, grounded recipe by searching online with Tavily
+    and then using Azure OpenAI to format and enhance the search results.
     """
-    print(f"Starting recipe generation for: {food_name}...")
+    print(f"Starting grounded recipe generation for: {food_name}...")
+
     try:
+        # --- Step 1: Search online for recipe content using Tavily ---
+        print(f"Searching for '{food_name} recipe' with Tavily...")
+        search_query = f"detailed recipe for {food_name}"
+        
+        # Using search_depth="advanced" gives more comprehensive results
+        search_result = tavily_client.search(
+            query=search_query,
+            search_depth="advanced",
+            include_answer=True, # Ask Tavily to provide a summarized answer
+            max_results=10 # Get the top 10 results for a richer context
+        )
+        
+        # --- Step 2: Prepare the grounding context for the LLM ---
+        # We will combine the summarized answer and the content of the top search results.
+        context_data = search_result.get("answer", "") + "\n\n"
+        for result in search_result.get("results", []):
+            context_data += f"Source: {result.get('url')}\nContent: {result.get('content')}\n\n"
+        
+        if not context_data.strip():
+            print(f"No content found for '{food_name}' via Tavily search.")
+            return None
+
+        print("Successfully prepared grounding context from Tavily search results.")
+
+        # --- Step 3: Use Azure OpenAI to format the grounded data ---
         prompt_template = load_prompt_template()
-        final_prompt = prompt_template.format(food_name=food_name)
+        final_prompt = prompt_template.format(context_data=context_data)
 
         print(f"Sending request to Azure OpenAI using deployment: '{deployment_name}'...")
         response = client.chat.completions.create(
-            model=deployment_name, # This uses the deployment name from your .env file
+            model=deployment_name,
             messages=[
-                {"role": "system", "content": "You are a helpful assistant that only returns valid JSON."},
                 {"role": "user", "content": final_prompt}
             ],
-            temperature=0.3,
+            temperature=0.5,
             response_format={"type": "json_object"}
         )
         
         recipe_json_string = response.choices[0].message.content
-        print("Successfully received response from Azure.")
+        print("Successfully received formatted response from Azure.")
 
         if recipe_json_string:
             return json.loads(recipe_json_string)
         else:
             print("Error: Received an empty response from the model.")
             return None
+
     except Exception as e:
-        print(f"An unexpected error occurred: {e}")
+        print(f"An unexpected error occurred during the recipe generation process: {e}")
         return None
