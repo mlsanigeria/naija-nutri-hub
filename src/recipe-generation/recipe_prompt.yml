@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 description: "Generate a structured Nigerian recipe with ingredients and steps."
 
 prompt: |
@@ -45,28 +44,3 @@ prompt: |
     ],
     "source": "AI + Dataset"
   }
-
-=======
-recipe_generation_prompt: |
-  You are an expert Nigerian chef specializing in authentic, traditional recipes. Your task is to generate a detailed recipe for the given Nigerian dish: {food_name}.
-
-  You MUST provide a valid, single JSON object as your output. Do not include any text, greetings, or explanations before or after the JSON object. The JSON structure must be as follows:
-  {{
-    "food_name": "Name of the dish",
-    "description": "A brief, savory description of the dish.",
-    "region": "The Nigerian region or tribe the dish is most associated with.",
-    "spice_level": "Mild, Medium, or Spicy",
-    "servings": "e.g., 4",
-    "prep_time_minutes": "e.g., 15",
-    "cook_time_minutes": "e.g., 45",
-    "total_time_minutes": "e.g., 60",
-    "calories_per_serving": "e.g., 450",
-    "ingredients": [
-      {{"name": "ingredient name", "quantity": "e.g., 2 cups", "notes": "e.g., chopped or optional"}}
-    ],
-    "steps": [
-      {{"step_number": 1, "instruction": "Detailed instruction for this step."}},
-      {{"step_number": 2, "instruction": "Detailed instruction for the next step."}}
-    ]
-  }}
->>>>>>> upstream/main

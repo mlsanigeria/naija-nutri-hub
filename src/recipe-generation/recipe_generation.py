@@ -1,28 +1,18 @@
-<<<<<<< HEAD
-"""
-recipe_generation.py
-Main logic for recipe generation:
-- Attempts to get recipe from dataset
-- Falls back to TheMealDB
-- Else generates with model using structured prompt
-"""
-
 import os
 import yaml
 from openai import AzureOpenAI
 from recipe_tools import search_recipe_in_dataset, get_recipe_from_mealdb
 
-
-
-DATA_PATH = os.path.join(os.path.dirname(__file__), "../../data/Nigerian Foods.csv")
-
-# Initialize Azure OpenAI client
+# Initialize OpenAI client
 
 client = AzureOpenAI(
     api_version="2024-12-01-preview",
     azure_endpoint="",
     api_key="",
 )
+
+# Path to your dataset (optional, if available)
+DATA_PATH = os.path.join(os.path.dirname(__file__), "Nigerian Foods.csv")
 
 def generate_structured_recipe(food_name: str):
     """
@@ -33,10 +23,14 @@ def generate_structured_recipe(food_name: str):
       3. Generate using model with YAML prompt (grounded with dataset context)
     """
 
-    # local dataset
+    print(f"Starting recipe generation for: {food_name}\n")
+
+    # STEP 1: Try local dataset
+    print("🔍 Step 1: Searching local dataset...")
     dataset_recipe = search_recipe_in_dataset(food_name, DATA_PATH)
+
     if dataset_recipe:
-        
+        print("Recipe found in dataset! Adding context...\n")
         context = {
             "food_name": dataset_recipe.get("food_name", food_name),
             "description": dataset_recipe.get("description", "A delicious Nigerian dish."),
@@ -45,7 +39,7 @@ def generate_structured_recipe(food_name: str):
             "spice_level": dataset_recipe.get("spice_level", "Medium"),
         }
     else:
-        # fallback context
+        print(" No entry found in dataset. Proceeding with fallback context.\n")
         context = {
             "food_name": food_name,
             "description": "",
@@ -54,22 +48,25 @@ def generate_structured_recipe(food_name: str):
             "spice_level": "",
         }
 
-    # TheMealDB API 
+    # STEP 2: Try TheMealDB API
+    print("🌐 Step 2: Fetching from TheMealDB API...")
     api_recipe = get_recipe_from_mealdb(food_name)
     if api_recipe:
+        print(" Recipe fetched from TheMealDB API!\n")
         return {
             "source": "themealdb_api",
             "data": api_recipe
         }
 
-    # Generate with model (YAML-based prompt)
+    # STEP 3: Generate with model (YAML-based prompt)
+    print("🤖 Step 3: Generating recipe using model (Azure OpenAI)...\n")
     prompt_file = os.path.join(os.path.dirname(__file__), "recipe_prompt.yml")
     with open(prompt_file, "r", encoding="utf-8") as f:
         prompts = yaml.safe_load(f)
 
-    
     template = prompts["prompt"]
 
+    # Fill placeholders with dataset context
     filled_prompt = (
         template.replace("{{ food_name }}", context["food_name"])
                 .replace("{{ description }}", context["description"])
@@ -78,10 +75,12 @@ def generate_structured_recipe(food_name: str):
                 .replace("{{ spice_level }}", context["spice_level"])
     )
 
-    
+    print(" Prompt being sent to model:\n")
+    print(filled_prompt, "\n") 
+
     try:
         completion = client.chat.completions.create(
-            model="gpt-4o",  
+            model="gpt-4o-mini", 
             messages=[
                 {"role": "system", "content": "You are a helpful Nigerian chef assistant."},
                 {"role": "user", "content": filled_prompt}
@@ -90,12 +89,15 @@ def generate_structured_recipe(food_name: str):
         )
 
         structured_recipe = completion.choices[0].message.content
+        print("Model responded with structured recipe!\n")  
         return {
             "source": "model",
             "data": structured_recipe
         }
 
     except Exception as e:
+        print(" Error occurred during model generation!\n")
+        print("Error message:", str(e))
         return {
             "source": "error",
             "error": str(e),
@@ -103,40 +105,9 @@ def generate_structured_recipe(food_name: str):
         }
 
 
-# Quick test
+# 🚀 Quick test
 if __name__ == "__main__":
     result = generate_structured_recipe("Jollof Rice")
+
     print(result)
-=======
-# src/recipe-generation/recipe_generation.py
 
-import json
-from recipe_tools import generate_recipe
-
-def get_recipe_for_dish(food_name: str):
-    """
-    A simple function to demonstrate how to use the recipe generation tool.
-    
-    Args:
-        food_name (str): The name of the dish to get a recipe for.
-        
-    Returns:
-        dict or None: The recipe data if successful, otherwise None.
-    """
-    print(f"Requesting recipe for: {food_name}")
-    recipe_data = generate_recipe(food_name)
-    
-    if recipe_data:
-        print("\n--- Successfully Generated Recipe ---")
-        print(json.dumps(recipe_data, indent=2))
-        return recipe_data
-    else:
-        print(f"\n--- Failed to Generate Recipe for {food_name} ---")
-        return None
-
-# This part allows the script to be run as an example from the command line
-if __name__ == "__main__":
-    # You can change this to test other dishes
-    dish_to_try = "Jollof Rice" 
-    get_recipe_for_dish(dish_to_try)
->>>>>>> upstream/main
