@@ -32,9 +32,6 @@ client = AzureOpenAI(
     api_version=api_version # <-- Adding the required API version
 )
 
-# --- Initialize Spoonacular API Client ---
-spoonacular_key = os.getenv("SPOONACULAR_API_KEY")
-
 # --- Initialize Tavily Search Client ---
 tavily_key = os.getenv("TAVILY_API_KEY")
 
