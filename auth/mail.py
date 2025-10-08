@@ -11,6 +11,7 @@ load_dotenv()
 ADMIN_EMAIL = os.getenv('ADMIN_EMAIL')
 ADMIN_EMAIL_PASSWORD = os.getenv('ADMIN_EMAIL_PASSWORD')
 SERVER = os.getenv('SERVER')
+SMTP_PORT = int(os.getenv("MAIL_PORT", "587"))
 
 context = ssl._create_unverified_context()    
 
@@ -56,7 +57,6 @@ def send_email_otp(receiver_email, otp_code, expiry_minutes=10, user_name="User"
         msg.add_alternative(html_content, subtype='html')  # HTML version
 
         # Send email via SMTP with SSL
-        SMTP_PORT = int(os.getenv("MAIL_PORT", "587"))
         with smtplib.SMTP(SERVER, SMTP_PORT) as smtp:
             smtp.starttls(context=context)
             smtp.login(ADMIN_EMAIL, ADMIN_EMAIL_PASSWORD)
@@ -123,7 +123,6 @@ def send_email_welcome(user_name, receiver, attachment=False):
             )
 
         # --- Send Email ---
-        SMTP_PORT = int(os.getenv("MAIL_PORT", "587"))
         with smtplib.SMTP(SERVER, SMTP_PORT) as smtp:
             smtp.starttls(context=context)
             smtp.login(ADMIN_EMAIL, ADMIN_EMAIL_PASSWORD)
