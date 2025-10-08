@@ -191,26 +191,26 @@ def verify_user_account(otp_data: OTPVerifyRequest):
 
     set_verified = False
     try:
-        # 1) mark verified
+        # Mark verified
         user_auth.update_one({"email": user["email"]}, {
             "$set": {"is_verified": True, "updated_at": datetime.now(timezone.utc)}
         })
         set_verified = True
 
-        # 2) send welcome email (NOTE: signature is send_email_welcome(user_name, receiver, ...))
-        user_name = f"{user.get('firstname', '')} {user.get('lastname', '')}".strip() or user.get("username", "there")
+        # Send welcome email
+        user_name = user.get('firstname', '').strip() or user.get("username", "there").strip()
         send_result = send_email_welcome(user_name=user_name, receiver=user["email"])
 
         ok = isinstance(send_result, dict) and send_result.get("status") == "success"
         if not ok:
-            # 3) rollback and keep OTP so user can retry
+            # Rollback verification and keep OTP so user can retry
             user_auth.update_one({"email": user["email"]}, {
                 "$set": {"is_verified": False, "updated_at": datetime.now(timezone.utc)}
             })
             err_msg = (send_result or {}).get("message", "Failed to send welcome email")
             raise HTTPException(status_code=500, detail=f"Verification succeeded, but Welcome email failed: {err_msg}")
 
-        # 4) success: delete OTP
+        # Success: delete OTP
         otp_record.delete_one({"email": otp_rec["email"]})
         return {"message": "Account verified successfully. Welcome email sent.", "email_sent": True}
 
@@ -310,6 +310,7 @@ def reset_password(req: ResetPasswordRequest):
 
     otp_record.delete_one({"email": req.email})
     return {"message": "Password reset successfully"}
+
 
 
 
