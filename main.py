@@ -11,7 +11,7 @@ from fastapi import FastAPI, Depends, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.exceptions import HTTPException
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
-from bson.objectid import ObjectId
+from bson import ObjectId
 from auth.service import resend_otp_service
 from auth.mail import send_email_otp, send_email_welcome
 
@@ -310,6 +310,7 @@ def reset_password(req: ResetPasswordRequest):
 
     otp_record.delete_one({"email": req.email})
     return {"message": "Password reset successfully"}
+
 
 
 
