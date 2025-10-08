@@ -56,9 +56,12 @@ def send_email_otp(receiver_email, otp_code, expiry_minutes=10, user_name="User"
         msg.add_alternative(html_content, subtype='html')  # HTML version
 
         # Send email via SMTP with SSL
-        with smtplib.SMTP_SSL(SERVER, 465, context=context) as smtp:
+        SMTP_PORT = int(os.getenv("MAIL_PORT", "587"))
+        with smtplib.SMTP(SERVER, SMTP_PORT) as smtp:
+            smtp.starttls(context=context)
             smtp.login(ADMIN_EMAIL, ADMIN_EMAIL_PASSWORD)
             smtp.send_message(msg)
+
 
         return {"success": True, "message": f"OTP sent successfully to {receiver_email}"}
 
@@ -120,7 +123,9 @@ def send_email_welcome(user_name, receiver, attachment=False):
             )
 
         # --- Send Email ---
-        with smtplib.SMTP_SSL(SERVER, 465, context=context) as smtp:
+        SMTP_PORT = int(os.getenv("MAIL_PORT", "587"))
+        with smtplib.SMTP(SERVER, SMTP_PORT) as smtp:
+            smtp.starttls(context=context)
             smtp.login(ADMIN_EMAIL, ADMIN_EMAIL_PASSWORD)
             smtp.send_message(msg)
 

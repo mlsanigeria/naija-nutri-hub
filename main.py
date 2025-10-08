@@ -11,8 +11,9 @@ from fastapi import FastAPI, Depends, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.exceptions import HTTPException
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
-from bson import ObjectId
+from bson.objectid import ObjectId
 from auth.service import resend_otp_service
+from auth.mail import send_email_otp, send_email_welcome
 
 # Authentication
 from auth.mail import send_email_otp
@@ -165,50 +166,63 @@ def sign_up_user(user_data: UserCreate):
 
 @app.post("/verify", tags=["Authentication"])
 def verify_user_account(otp_data: OTPVerifyRequest):
-    """ Verify user account using OTP"""
+    """ Verify user account using OTP and send welcome email """
 
-    # Check the OTP record
     otp_rec = otp_record.find_one({
         "email": otp_data.email,
         "otp": otp_data.otp
     })
-
     if not otp_rec:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Incorrect OTP",
-        ) 
-    
-    # Check for 5 minutes otp expiry 
-    otp_age = datetime.now(timezone.utc) - otp_rec["created_at"]
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Incorrect OTP")
+
     OTP_EXPIRY_MINUTES = 5
-    
+    otp_age = datetime.now(timezone.utc) - otp_rec["created_at"]
     if otp_age > timedelta(minutes=OTP_EXPIRY_MINUTES):
-        # Delete expired OTP
         otp_record.delete_one({"email": otp_rec["email"]})
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="OTP has expired. Please request a new one"
-        )
-    
-    # Find user
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="OTP has expired. Please request a new one")
+
     user = user_auth.find_one({"email": otp_rec["email"]})
-
     if not user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="User not found"
-        )
-    
-    user_auth.update_one({"email": user["email"]}, {
-        "$set": {
-            "is_verified": True,
-            "updated_at": datetime.now(timezone.utc)
-        }
-    })
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
 
-    otp_record.delete_one({"email": otp_rec["email"]})
-    return {"message": "Account verified successfully"}
+    if user.get("is_verified") is True:
+        otp_record.delete_one({"email": otp_rec["email"]})
+        return {"message": "Account already verified"}
+
+    set_verified = False
+    try:
+        # 1) mark verified
+        user_auth.update_one({"email": user["email"]}, {
+            "$set": {"is_verified": True, "updated_at": datetime.now(timezone.utc)}
+        })
+        set_verified = True
+
+        # 2) send welcome email (NOTE: signature is send_email_welcome(user_name, receiver, ...))
+        user_name = f"{user.get('firstname', '')} {user.get('lastname', '')}".strip() or user.get("username", "there")
+        send_result = send_email_welcome(user_name=user_name, receiver=user["email"])
+
+        ok = isinstance(send_result, dict) and send_result.get("status") == "success"
+        if not ok:
+            # 3) rollback and keep OTP so user can retry
+            user_auth.update_one({"email": user["email"]}, {
+                "$set": {"is_verified": False, "updated_at": datetime.now(timezone.utc)}
+            })
+            err_msg = (send_result or {}).get("message", "Failed to send welcome email")
+            raise HTTPException(status_code=500, detail=f"Verification succeeded, but Welcome email failed: {err_msg}")
+
+        # 4) success: delete OTP
+        otp_record.delete_one({"email": otp_rec["email"]})
+        return {"message": "Account verified successfully. Welcome email sent.", "email_sent": True}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        if set_verified:
+            user_auth.update_one({"email": user["email"]}, {
+                "$set": {"is_verified": False, "updated_at": datetime.now(timezone.utc)}
+            })
+        raise HTTPException(status_code=500, detail=f"Unexpected error during verification email: {str(e)}")
+
 
 
 @app.post("/resend_otp", tags=["Authentication"])
