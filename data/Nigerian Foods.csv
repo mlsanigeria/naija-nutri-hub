@@ -1,0 +1,110 @@
+Food_Name,Main_Ingredients,Description,Food_Health,Food_Class,Region,Spice_Level,Price_Range
+Abacha,"African salad, utazi leaves, oil, fish",Cassava-based salad with spicy fish,Healthy,Traditional,South-East,Spicy,Affordable
+Abacha and Ugba (Regular),"Abacha (Cassava Fufu), Ugba (Oilbean Seeds)",Shredded cassava fufu served with oilbean seeds.,Healthy,Traditional,Eastern,None,Affordable
+Abacha and Ugba,"African salad, oil, fish, fermented oil bean seeds (ugba)",Cassava-based salad with spicy fish and fermented oil bean seeds,Healthy,Salad,South-East,Spicy,Affordable
+Afang Soup (Spicy),"Afang Leaves, Water yam, Seafood","Spicy soup made with afang leaves, water yam, and seafood.",Healthy,Traditional,Southern,Spicy,Affordable
+Afang Soup,"Afang leaves, waterleaf, meat, fish",Nutritious soup made with wild spinach and waterleaf,Healthy,Traditional,South-South,Mild,Affordable
+Afang Soup (Seafood),"Afang leaves, expensive seafood (lobster, prawns), waterleaf","Nutritious soup made with wild spinach, expensive seafood like lobster and prawns, and waterleaf",Healthy,Traditional,South-South,Mild,Very Expensive
+Afia Efere,"Waterleaf, periwinkle, meat, fish",Light soup made with waterleaf and seafood,Healthy,Traditional,South-South,Mild,Affordable
+Agege Bread,"Flour, Yeast, Sugar","Soft, slightly sweet bread with a crispy crust.",Non-Healthy,Modern,Lagos,None,Affordable
+Agege Bread (Large),"Flour, yeast, sugar","Large version of soft, slightly sweet bread with a crispy crust",Not Healthy,Bread,Lagos,None,Affordable
+Agege Bread (Special),"Flour, yeast, sugar, special palm oil",Special version of Agege bread made with a high-quality palm oil for extra flavor,Not Healthy,Bread,Lagos,None,Moderate
+Agidi (White),"Maize flour, water","White cornmeal pudding, often served with stews or soups",Healthy,Breakfast,Nationwide,Mild,Affordable
+Akara,"Black-eyed peas, onions, peppers","Fried bean cakes, often served as a breakfast",Healthy,Traditional,South,Mild,Affordable
+Amala and Ewedu Soup,"Yam flour, jute leaves, meat, fish",Thick yam-based swallow with jute leaf soup,Moderately Healthy,Traditional,South-West,Mild,Affordable
+Ayamase Sauce,"Green peppers, onions, locust beans, spices","Spicy green pepper sauce, often paired with Ofada rice",Moderately Healthy,Modern,South-West,Spicy,Affordable
+Banga Soup (Regular),"Palm Nut Fruit, Seafood",Thick soup made with palm nut fruit and seafood.,Healthy (varies),Traditional,Southern,Mild,Affordable
+Banga Soup ,"Palm fruit extract, meat, fish, spices",Palm fruit soup with assorted meats and fish,Healthy,Traditional,South-South,Mild,Affordable
+Banga Soup (Full),"Palm fruit extract, assorted protein (meat, fish, offal), spices","Full version of Banga soup with a variety of meats, fish, and offal for a richer flavor",Healthy,Soup,South-South,Mild,Moderate-Expensive
+Banga Soup (Snail),"Palm fruit extract, expensive protein (snail), spices","Palm fruit soup with the addition of snails, a delicacy in some regions",Healthy,Traditional,South-South,Mild,Moderate-Expensive
+Bitterleaf Soup,"Bitterleaf, cocoyam, meat, fish",Soup made from bitterleaf and assorted meats,Healthy,Traditional,South-East,Mild,Affordable
+Blended Ogbono Soup,"Ogbono seeds, meat, fish, vegetables","Thick and rich soup made with ground ogbono seeds, vegetables, and protein",Healthy,Soup,South-East,Mild,Affordable
+Bole (Plantain) and Fish,"Plantains, Fish",Fried or roasted plantains served with fried fish.,Non-Healthy,Traditional,Southern,None - Mild,Affordable
+Bole (Roasted),Plantains,"Roasted plantains, a simple and delicious street food",Healthy,Snack,Nationwide,None,Affordable
+Bole (Special),"Plantains, special palm oil, nuts (peanuts, tiger nuts)",Roasted plantains prepared with high-quality palm oil and a sprinkle of nuts,Healthy,Snack,Nationwide,None,Moderate
+Boli,"Plantains, groundnut sauce",Grilled plantains served with spicy peanut sauce,Moderately Healthy,Snack,South,Spicy,Affordable
+Bushmeat Stew,"Wild game meat (antelope, grasscutter), vegetables, spices","Stew made with various types of wild game meat, vegetables, and spices",Healthy,Stew,Nationwide,Varies,Expensive
+Chin Chin,"Flour, Milk, Sugar",Deep-fried dough bites flavored with nutmeg and cinnamon.,Non-Healthy,Snack,Nationwide,None,Affordable
+Chin Chin (Jumbo),"Flour, milk, sugar, chili peppers (large quantity)",Extra-large deep-fried dough bites flavored with chili peppers,Not Healthy,Snack,Nationwide,Spicy,Moderate
+Chin Chin (Plain),"Flour, milk, sugar",Deep-fried dough bites flavored with nutmeg and cinnamon (without chili peppers),Not Healthy,Snack,Nationwide,None,Affordable
+Chin Chin (Spicy),"Flour, milk, sugar, chili peppers",Spicy deep-fried dough bites flavored with chili peppers,Not Healthy,Snack,Nationwide,Spicy,Affordable
+Chinchinga,"Kebabs, vegetables, spices","Grilled skewers, a popular street food",Moderately Healthy,Snack,North,Spicy,Affordable
+Coconut Candy,"Coconut flakes, sugar, spices","Sweet candy made with coconut flakes, sugar, and spices",Not Healthy,Snack,Nationwide,None,Affordable
+Coconut Rice (Regular),"Rice, Coconut Milk, Spices",Savory rice dish cooked with coconut milk and spices.,Healthy,Traditional,Southern,None,Affordable
+Coconut Rice,"Rice, coconut milk, vegetables, chicken",Rice cooked with coconut milk and spices,Moderately Healthy,Modern,Nationwide,Mild,Affordable
+Coconut Rice (Seafood),"Rice, coconut milk, vegetables, expensive seafood (lobster, prawns)","Rice cooked with coconut milk and spices, featuring luxurious seafood options",Moderately Healthy,Modern,Nationwide,Mild,Expensive
+Edide (Special),"Cocoyam, expensive protein (assorted meats, offal), spices","Special occasion dish made with cocoyam, a variety of meats and offal, and spices",Healthy,Stew,South-South,Mild,Very Expensive
+Edikaikong Soup,"Cocoyam, Seafood, Peppers","Thick, viscous soup made with cocoyam, seafood, and peppers.",Healthy,Traditional,Southern,Spicy,Affordable
+Edikaikong Soup (Expensive),"Expensive seafood (lobster, prawns), vegetables, spices",Special occasion soup packed with luxurious seafood like lobster and prawns,Healthy,Soup,South-South,Mild,Very Expensive
+Edikang Ikong,"Ugu leaves, waterleaf, meat, fish",Vegetable soup with assorted meats and fish,Healthy,Traditional,South-South,Mild,Affordable
+Efo Egusi,"Egusi seeds, spinach, meat, fish",Melon seed soup with vegetables and protein,Healthy,Traditional,South-West,Medium,Affordable
+Efo Elegusi,"Elegusi seeds, spinach, meat, fish",Ground melon seed soup with vegetables and protein,Healthy,Traditional,South-West,Medium,Affordable
+Efo Riro (Regular),"Vegetables, Meat/Fish",Versatile soup with a variety of leafy green vegetables and protein.,Healthy,Traditional,Nationwide,Mild - Spicy,Affordable
+Efo Riro,"Spinach, tomatoes, peppers, meat, fish",Spinach stew with assorted meats and fish,Healthy,Traditional,South-West,Medium,Affordable
+Efo Riro (Seafood),"Spinach, tomatoes, peppers, seafood",Spinach stew with assorted seafood instead of meat,Healthy,Traditional,South-West,Medium,Affordable
+Egusi Soup,"Egusi (melon seeds), Vegetables, Meat/Fish","Thick soup made with ground melon seeds, vegetables, and protein.",Healthy,Traditional,Southern,Mild - Spicy,Affordable
+Egusi Soup (Full),"Egusi seeds, expensive protein (assorted meats, offal), vegetables","Rich and flavorful melon seed soup packed with various meats, offal, and vegetables",Healthy,Soup,South-West,Medium,Moderate-Expensive
+Ekpang Nkukwo,"Water yam, meat, seafood, spices","Spicy dish made with water yam, various meats, and seafood",Healthy,Traditional,South-South,Spicy,Moderate
+Ekpang Nla,"Water yam, expensive protein (assorted meats, offal), spices","Special occasion dish made with water yam, a variety of expensive meats and offal, and spices",Healthy,Traditional,South-South,Spicy,Very Expensive
+Ekpang Ubi,"Cocoyam, vegetables, meat, seafood, spices","Spicy dish made with cocoyam, vegetables, various meats, and seafood",Healthy,Traditional,South-South,Spicy,Moderate
+Ekpang Ubi (Special),"Cocoyam, expensive protein (assorted offal), vegetables, spices",Special occasion version of Ekpang Ubi with a focus on various offal cuts,Healthy,Traditional,South-South,Spicy,Moderate-Expensive
+Ewedu Soup,"Jute leaves, locust beans, meat, fish",Yoruba soup made with jute leaves and locust beans,Healthy,Traditional,South-West,Mild,Affordable
+Fried Rice,"Rice, vegetables, chicken, shrimp",Stir-fried rice with colorful vegetables and protein,Moderately Healthy,Modern,Nationwide,Mild,Affordable
+Fufu and Egusi Soup,"Fufu (cassava, plantain), egusi seeds, meat",Pounded starchy side dish with melon seed soup,Moderately Healthy,Traditional,Nationwide,Mild,Affordable
+Gizdodo,"Gizzards, plantains, bell peppers, onions",Spicy gizzard and plantain stir-fry,Moderately Healthy,Modern,Nationwide,Spicy,Affordable
+Ikokore,"Plantains, crayfish, palm oil, vegetables",Steamed plantains cooked in palm oil with crayfish and vegetables,Healthy,Dish,South-South,Mild,Affordable
+Ikokore (Special),"Plantains, expensive protein (prawns, crayfish), palm oil, vegetables",Steamed plantains cooked in palm oil with luxurious seafood like prawns and crayfish,Healthy,Dish,South-South,Mild,Expensive
+Isi Ewu,"Cow head, palm oil, spices",Spicy and flavorful dish made from cow head cooked in palm oil,Moderately Healthy,Snack,South-East,Spicy,Moderate
+Iyan (Pounded Yam) (With Ram),"Yam, expensive protein (ram meat)","Pounded yam, a traditional staple, served with the luxurious meat of a ram",Moderately Healthy,Side Dish,Nationwide,Mild,Expensive
+Jollof Rice (Spicy),"Rice, Tomatoes, Peppers, Onions, Meat (optional)",Savory tomato-based rice dish with meat or vegetables.,Moderately Healthy,Traditional,Nationwide,Spicy,Affordable
+Jollof Rice,"Rice, tomatoes, onions, peppers, chicken",A popular one-pot dish with flavorful rice and spices,Moderately Healthy,Traditional,West,Medium,Affordable
+Jollof Rice (Party),"Rice, expensive protein (assorted meats, seafood), tomatoes, peppers",Party-sized Jollof rice with a wider variety of expensive meats and seafood,Moderately Healthy,Traditional,Nationwide,Medium,Expensive
+Kilishi (Regular),"Beef, Spices",Jerky-like dried meat with a spicy flavor.,Non-Healthy,Snack,Northern,Spicy,Affordable
+Kilishi,"Dried, spiced meat strips",Nigerian-style beef jerky,Moderately Healthy,Snack,North,Spicy,Affordable
+Kilishi (Exotic),"Exotic meats (antelope, ostrich), spices",Nigerian-style beef jerky made with uncommon and expensive meats,Moderately Healthy,Snack,North,Spicy,Very Expensive
+Kilishi (Gourmet),"Dried, spiced meat strips (premium cuts)",High-end version of Kilishi made with the finest cuts of meat and unique spices,Moderately Healthy,Snack,North,Spicy,Very Expensive
+Kilishi Stew,"Dried, spiced meat strips, tomatoes, peppers, onions",Spicy stew made with kilishi (Nigerian beef jerky),Moderately Healthy,Stew,North,Spicy,Affordable
+Kuli Kuli,"Groundnut paste, spices",Peanut snack balls flavored with spices,Moderately Healthy,Snack,Nationwide,Mild,Affordable
+Kuli Kuli (Groundnut Peanut) Snacks,"Peanuts, Spices",Groundnut peanut snacks with various spices and flavors.,Healthy,Snack,Northern,Mild - Spicy,Affordable
+Kunu (Various),"Grains (millet, guinea corn, etc.), water","Non-alcoholic beverage made from fermented grains, with various flavors available",Healthy,Beverage,Nationwide,Mild,Affordable
+Miyan Taushe,"Beans (black-eyed peas), tomatoes, onions, spices",Spicy stewed beans with a signature red color,Healthy,Stew,North,Spicy,Affordable
+Moi Moi (Regular),"Black-eyed peas, Peppers, Onions",Steamed bean pudding flavored with peppers and onions.,Healthy,Traditional,Southwestern,Mild,Affordable
+Moi Moi,"Beans, peppers, onions, spices","Steamed bean pudding, a vegetarian delicacy",Healthy,Traditional,South-East,Mild,Affordable
+Moi Moi (Ijebu),"Beans, peppers, onions, spices (special Ijebu blend)",Steamed bean pudding prepared with a unique and flavorful Ijebu spice blend,Healthy,Snack,South-West,Mild,Moderate
+Moi Moi (Puff Puff),"Beans, peppers, onions, spices, baking powder",Steamed bean pudding with a fluffy texture similar to puff puff,Healthy,Snack,Nationwide,Mild,Affordable
+Nkwobi,"Cow's foot, utazi leaves, spices","Spicy cow's foot dish, often served as a snack",Moderately Healthy,Snack,South-East,Spicy,Moderate
+Nkwobi (Special Cuts),"Cow foot (special cuts -kpomo-), utazi leaves, spices",Spicy cow foot dish made with premium cuts of the cow foot (kpomo),Moderately Healthy,Snack,South-East,Spicy,Moderate-Expensive
+Obe Ata,"Chicken, palm oil, tomatoes, peppers, spices",Spicy chicken stew cooked in palm oil,Moderately Healthy,Stew,South-South,Spicy,Affordable
+Ofada Rice (Special),"Ofada rice, special palm oil, locust beans, spices",Ofada rice dish prepared with a high-quality palm oil and unique spice blend,Moderately Healthy,Traditional,South-West,Spicy,Moderate-Expensive
+Ofada Rice and Ayamase Sauce,"Ofada rice, green peppers, locust beans",Local rice and spicy green pepper sauce,Healthy,Traditional,South-West,Spicy,Moderate
+Ofe Nsala,"Catfish, yam, utazi leaves",White soup made with catfish and yam,Healthy,Traditional,South-East,Mild,Moderate
+Ogbono Soup (Full),"Ogbono seeds, expensive protein (assorted meats, offal), vegetables","Thick and rich soup made with ground ogbono seeds, a variety of expensive meats and offal, and vegetables",Healthy,Soup,South-East,Mild,Moderate-Expensive
+Ogi,"Fermented cereal, milk, sugar, fruits",Spongy porridge made from fermented corn,Healthy,Breakfast,Nationwide,Mild,Affordable
+Oha Soup,"Oha leaves, cocoyam, meat, fish",Soup made with Oha leaves and assorted meats,Healthy,Traditional,South-East,Mild,Affordable
+Oha Soup (Goat),"Oha leaves, expensive meat (goat), fish","Oha leaf soup made with goat meat, a more expensive alternative to traditional protein options",Healthy,Traditional,South-East,Mild,Moderate-Expensive
+Okra Soup,"Okra, Vegetables, Meat/Fish",Savory soup with okra as the main vegetable.,Healthy,Traditional,Nationwide,Mild - Spicy,Affordable
+Okro Stew,"Okra, tomatoes, peppers, meat, fish",Okra-based soup with assorted meats and fish,Healthy,Traditional,South-East,Mild,Affordable
+Owo Soup (Plantain),"Plantains, Unripe Plantains, Vegetables, Meat/Fish","Spicy soup with plantains, unripe plantains, vegetables, and protein.",Healthy,Traditional,Eastern,Spicy,Affordable
+Owo Soup,"Owo leaves, meat, fish",Green soup with Owo leaves and assorted meats,Healthy,Traditional,South-South,Mild,Affordable
+Owo Soup (Special Meat),"Owo leaves, expensive meat (goat, bushmeat), fish",Green soup made with Owo leaves and a selection of pricier meats like goat or bushmeat,Healthy,Traditional,South-South,Mild,Moderate-Expensive
+Owo Soup (White),"White melon seeds, meat, fish, spices",White soup made with white melon seeds instead of the usual black ones,Healthy,Soup,South-South,Mild,Affordable
+Pepper Soup (Special),"Catfish, expensive protein (assorted offal), spices","Spicy soup made with catfish and a variety of offal cuts, known for its heat",Healthy,Soup,Nationwide,Spicy,Moderate-Expensive
+Plantain Chips,"Plantains, oil, salt","Thinly sliced, fried plantains seasoned with salt",Not Healthy,Snack,Nationwide,None,Affordable
+Pounded Yam,Yams,Boiled and pounded yams served with soups or stews.,Healthy,Traditional,Southern,None,Affordable
+Pounded Yam (With Egusi and Ogbono),"Yam, egusi seeds, ogbono seeds, meat, fish",Pounded yam served with a combination of two rich soups: egusi and ogbono,Healthy,Side Dish,Nationwide,Medium,Moderate
+Pounded Yam and Egusi Soup,"Yam, egusi seeds, spinach, meat, fish",Mashed yam paired with a rich melon seed soup,Healthy,Traditional,South,Mild,Affordable
+Puff Puff,"Flour, Yeast, Sugar, Eggs","Deep-fried sweet dough balls, often sprinkled with sugar.",Non-Healthy,Snack,Nationwide,None,Affordable
+Puff Puff (Jumbo),"Flour, yeast, sugar, eggs (large quantity)","Extra-large deep-fried dough ball, often sprinkled with sugar",Not Healthy,Snack,Nationwide,Mild,Moderate
+Puff Puff (Large),"Flour, yeast, sugar, eggs","Large deep-fried dough ball, often sprinkled with sugar",Not Healthy,Snack,Nationwide,Mild,Affordable
+Puff Puff (Mini),"Flour, yeast, sugar, eggs","Small deep-fried dough balls, often sprinkled with sugar",Not Healthy,Snack,Nationwide,Mild,Affordable
+Semovita,"Semolina flour, water",Boiled semolina dough often served with soups and stews,Moderately Healthy,Swallow,Nationwide,Mild,Affordable
+Semovita with Edikaikong Soup,"Semolina flour, water, expensive seafood (lobster, prawns), vegetables, spices",Boiled semolina dough with a luxurious seafood soup made with lobster and prawns,Moderately Healthy,Combo,Nationwide,Mild,Expensive
+Suya,"Beef, groundnut spice mix, onions","Grilled skewered meat, a popular street food",Moderately Healthy,Snack,North,Spicy,Affordable
+Suya (Skewered Meat),"Beef, Skewers, Spices","Skewered, spiced, and grilled meat.",Non-Healthy,Traditional,Northern,Spicy,Affordable
+Suya (Special),"Beef, exclusive spice mix, special cuts (tenderloin)","Grilled skewered meat with a unique and expensive spice blend, using premium cuts",Moderately Healthy,Snack,Nationwide,Spicy,Expensive
+Tom Brown,"Ripe plantains, peanuts",Sweet dish made with mashed ripe plantains and peanuts,Not Healthy,Dessert,Nationwide,None,Affordable
+Ukodo,"Yam, plantains, meat, fish",Yam and plantain pepper soup with assorted meats,Healthy,Traditional,South-East,Spicy,Affordable
+Ukwa (Breadfruit),"Breadfruit, palm oil, spices","Special occasion dish made with breadfruit, a less common but prized ingredient",Healthy,Traditional,South-East,Varies,Moderate-Expensive
+White Soup,"Yams, Ugu (Spinach), Palm Oil","Creamy white soup made with yams, spinach, and palm oil.",Healthy,Traditional,Eastern,None,Affordable
+White Soup (Goat),"Catfish (substitute with expensive protein - goat), yam, utazi leaves, spices",White soup with goat meat as a pricier alternative to the traditional catfish,Healthy,Traditional,South-East,Mild,Moderate-Expensive
+White Soup (Special),"Catfish, expensive starches (plantain flour), vegetables, spices",Special white soup made with catfish and premium starches like plantain flour,Healthy,Traditional,South-East,Mild,Expensive

@@ -1,4 +1,10 @@
-# src/recipe-generation/recipe_tools.py (Final Version)
+"""
+recipe_tools.py
+Contains helper functions for recipe generation:
+- Search recipes in local dataset
+- Fetch from TheMealDB API
+- Fallback to model generation
+"""
 
 import os
 import yaml
@@ -8,29 +14,27 @@ from dotenv import load_dotenv
 from pathlib import Path
 from tavily import TavilyClient
 
-# --- Configuration (Final, Professional Version) ---
-dotenv_path = Path(__file__).resolve().parents[2] / '.env'
-load_dotenv(dotenv_path=dotenv_path)
+def search_recipe_in_dataset(food_name: str, data_path: str):
+    """
+    Search the local Nigerian Foods CSV for a matching recipe description.
+    Returns None if not found.
+    """
+    if not os.path.exists(data_path):
+        print(f"Dataset not found at {data_path}")
+        return None
 
-# Get all required credentials from environment variables
-api_key = os.getenv("AZURE_OPENAI_API_KEY")
-base_url = os.getenv("AZURE_OPENAI_BASE_URL")
-deployment_name = os.getenv("AZURE_OPENAI_DEPLOYMENT_NAME")
-api_version = os.getenv("AZURE_OPENAI_API_VERSION") # <-- Loading the new version
-
-# Check if all required environment variables are set
-if not all([api_key, base_url, deployment_name, api_version]):
-    raise ValueError(
-        "Azure credentials not found. Please set all of the following in your .env file: "
-        "AZURE_OPENAI_API_KEY, AZURE_OPENAI_BASE_URL, AZURE_OPENAI_DEPLOYMENT_NAME, AZURE_OPENAI_API_VERSION"
-    )
-
-# Initialize the Azure OpenAI client with all required parameters
-client = AzureOpenAI(
-    api_key=api_key,
-    azure_endpoint=base_url,
-    api_version=api_version # <-- Adding the required API version
-)
+    with open(data_path, 'r', encoding='utf-8') as file:
+        reader = csv.DictReader(file)
+        for row in reader:
+            if food_name.lower() in row["Food_Name"].lower():
+                return {
+                    "food_name": row["Food_Name"],
+                    "description": row.get("Description", ""),
+                    "main_ingredients": row.get("Main_Ingredients", ""),
+                    "region": row.get("Region", ""),
+                    "spice_level": row.get("Spice_Level", ""),
+                }
+    return None
 
 # --- Initialize Tavily Search Client ---
 tavily_key = os.getenv("TAVILY_API_KEY")

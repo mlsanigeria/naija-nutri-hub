@@ -20,10 +20,16 @@ recipe_generation_prompt: |
     "total_time_minutes": "e.g., 60",
     "source_api": "Tavily Search",
     "ingredients": [
-      {{"name": "ingredient name", "quantity": "e.g., 2 cups", "notes": "e.g., chopped or optional"}}
+      {"name": "Rice", "quantity": "2 cups"},
+      {"name": "Tomatoes", "quantity": "4 large"}
     ],
     "steps": [
-      {{"step_number": 1, "instruction": "Detailed instruction for this step."}},
-      {{"step_number": 2, "instruction": "Detailed instruction for the next step."}}
-    ]
-  }}
+      "Step 1: ...",
+      "Step 2: ..."
+    ],
+    "tips": [
+      "Tip 1: ...",
+      "Tip 2: ..."
+    ],
+    "source": "AI + Dataset"
+  }
