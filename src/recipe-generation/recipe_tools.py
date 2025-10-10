@@ -7,8 +7,12 @@ Contains helper functions for recipe generation:
 """
 
 import os
-import csv
-import requests
+import yaml
+import json
+from openai import AzureOpenAI
+from dotenv import load_dotenv
+from pathlib import Path
+from tavily import TavilyClient
 
 def search_recipe_in_dataset(food_name: str, data_path: str):
     """
@@ -32,35 +36,78 @@ def search_recipe_in_dataset(food_name: str, data_path: str):
                 }
     return None
 
+# --- Initialize Tavily Search Client ---
+tavily_key = os.getenv("TAVILY_API_KEY")
 
-def get_recipe_from_mealdb(food_name: str):
+if not tavily_key:
+    raise ValueError("Tavily API key not found. Please set TAVILY_API_KEY in your .env file.")
+
+tavily_client = TavilyClient(api_key=tavily_key)
+
+# --- Helper Function to Load the Prompt ---
+def load_prompt_template():
+    """Loads the recipe generation prompt from the YAML file."""
+    prompt_file_path = Path(__file__).parent / "recipe_prompt.yml"
+    with open(prompt_file_path, 'r') as f:
+        prompt_data = yaml.safe_load(f)
+    return prompt_data['recipe_generation_prompt']
+
+# --- Main Grounded Recipe Generation Tool (Tavily Version) ---
+def generate_recipe(food_name: str):
     """
-    Fetch recipe data from TheMealDB API.
-    Returns structured recipe if found, else None.
+    Generates a structured, grounded recipe by searching online with Tavily
+    and then using Azure OpenAI to format and enhance the search results.
     """
-    url = f"https://www.themealdb.com/api/json/v1/1/search.php?s={food_name}"
+    print(f"Starting grounded recipe generation for: {food_name}...")
+
     try:
-        response = requests.get(url, timeout=10)
-        response.raise_for_status()
-        data = response.json()
-        if not data or not data.get("meals"):
+        # --- Step 1: Search online for recipe content using Tavily ---
+        print(f"Searching for '{food_name} recipe' with Tavily...")
+        search_query = f"detailed recipe for {food_name}"
+        
+        # Using search_depth="advanced" gives more comprehensive results
+        search_result = tavily_client.search(
+            query=search_query,
+            search_depth="advanced",
+            include_answer=True, # Ask Tavily to provide a summarized answer
+            max_results=10 # Get the top 10 results for a richer context
+        )
+        
+        # --- Step 2: Prepare the grounding context for the LLM ---
+        # We will combine the summarized answer and the content of the top search results.
+        context_data = search_result.get("answer", "") + "\n\n"
+        for result in search_result.get("results", []):
+            context_data += f"Source: {result.get('url')}\nContent: {result.get('content')}\n\n"
+        
+        if not context_data.strip():
+            print(f"No content found for '{food_name}' via Tavily search.")
             return None
 
-        meal = data["meals"][0]
-        ingredients = []
-        for i in range(1, 21):
-            name = meal.get(f"strIngredient{i}")
-            qty = meal.get(f"strMeasure{i}")
-            if name and name.strip():
-                ingredients.append({"name": name.strip(), "quantity": qty.strip()})
+        print("Successfully prepared grounding context from Tavily search results.")
 
-        return {
-            "food_name": meal.get("strMeal"),
-            "ingredients": ingredients,
-            "steps": meal.get("strInstructions", "").split("\r\n"),
-            "serving_size": "N/A",
-            "estimated_time": "N/A",
-        }
+        # --- Step 3: Use Azure OpenAI to format the grounded data ---
+        prompt_template = load_prompt_template()
+        final_prompt = prompt_template.format(context_data=context_data)
+
+        print(f"Sending request to Azure OpenAI using deployment: '{deployment_name}'...")
+        response = client.chat.completions.create(
+            model=deployment_name,
+            messages=[
+                {"role": "user", "content": final_prompt}
+            ],
+            temperature=0.5,
+            response_format={"type": "json_object"}
+        )
+        
+        recipe_json_string = response.choices[0].message.content
+        print("Successfully received formatted response from Azure.")
+
+        if recipe_json_string:
+            return json.loads(recipe_json_string)
+        else:
+            print("Error: Received an empty response from the model.")
+            return None
+
     except Exception as e:
-        print(f"Error fetching recipe from TheMealDB: {e}")
+        print(f"An unexpected error occurred during the recipe generation process: {e}")
         return None

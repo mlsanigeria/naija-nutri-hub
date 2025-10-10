@@ -1,35 +1,24 @@
-description: "Generate a structured Nigerian recipe with ingredients and steps."
+recipe_generation_prompt: |
+  You are an expert Nigerian chef. Your task is to take the provided recipe data from a general cooking API and reformat it into our specific, detailed JSON format, ensuring it feels authentic.
 
-prompt: |
-  You are a professional Nigerian chef assistant.
-  Generate a structured, detailed recipe for {{ food_name }} using the provided context.
+  You MUST base your response primarily on the information from the **"Provided Recipe Data Context"** below. However, you can use your expertise to infer plausible values for fields like 'region' or 'spice_level' if they are not available in the context.
 
-  Context:
-  - Description: {{ description }}
-  - Main ingredients: {{ main_ingredients }}
-  - Region: {{ region }}
-  - Spice level: {{ spice_level }}
+  **Provided Recipe Data Context:**
+  ---
+  {context_data}
+  ---
 
-  Requirements:
-  - Include ingredients with quantities and measurements
-  - Include a list of clear, step-by-step cooking instructions
-  - Include estimated preparation time, cook time, total time, and serving size
-  - Include approximate calories per serving (estimate)
-  - Only use ingredients typical for Nigerian cuisine or listed in main_ingredients
-  - Ensure all measurements use metric or standard cooking units
-  - Always respond in VALID JSON only — no markdown, no extra explanation
-
-  Output JSON structure:
-  {
-    "food_name": "{{ food_name }}",
-    "description": "{{ description }}",
-    "region": "{{ region }}",
-    "spice_level": "{{ spice_level }}",
-    "servings": 4,
-    "prep_time": 15,
-    "cook_time": 30,
-    "total_time": 45,
-    "calories_per_serving": 350,
+  Based on the context above, create a single, valid JSON object with the following structure. Do not include any text, greetings, or explanations before or after the JSON object.
+  {{
+    "food_name": "Name of the dish",
+    "description": "A brief, savory description of the dish. You can generate this based on the title and ingredients.",
+    "region": "The Nigerian region or tribe the dish is most associated with (e.g., Yoruba).",
+    "spice_level": "Mild, Medium, or Spicy (infer from ingredients like 'pepper').",
+    "servings": "e.g., 4",
+    "prep_time_minutes": "e.g., 15",
+    "cook_time_minutes": "e.g., 45",
+    "total_time_minutes": "e.g., 60",
+    "source_api": "Tavily Search",
     "ingredients": [
       {"name": "Rice", "quantity": "2 cups"},
       {"name": "Tomatoes", "quantity": "4 large"}
