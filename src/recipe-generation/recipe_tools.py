@@ -1,99 +1,111 @@
-"""
-recipe_tools.py
-Contains helper functions for recipe generation:
-- Search recipes in local dataset
-- Fetch from TheMealDB API
-- Fallback to model generation
-"""
-"""
-recipe_tools.py
-Contains helper functions for recipe generation:
-- Search recipes in local dataset
-- Fetch from TheMealDB API
-- Fallback to model generation
-"""
-
 import os
-import yaml
 import json
-from openai import AzureOpenAI
-from dotenv import load_dotenv
-from pathlib import Path
-from tavily import TavilyClient
-import pandas as pd
-from sentence_transformers import SentenceTransformer, util
+import yaml
 import requests
-import csv
+import pandas as pd
+from pathlib import Path
+from dotenv import load_dotenv
+from openai import AzureOpenAI
+from tavily import TavilyClient
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics.pairwise import cosine_similarity
 
-load_dotenv()
+# ========================================
+# Load environment variables and credentials
+# ========================================
+dotenv_path = Path(__file__).resolve().parents[2] / '.env'
+load_dotenv(dotenv_path=dotenv_path)
 
-def search_recipe_in_dataset(food_name: str, data_path: str):
-    """
-    Search the local Nigerian Foods CSV for a matching recipe description.
-    Returns None if not found.
-    """
-    if not os.path.exists(data_path):
-        print(f"Dataset not found at {data_path}")
-        return None
+api_key = os.getenv("AZURE_OPENAI_API_KEY")
+base_url = os.getenv("AZURE_OPENAI_BASE_URL")
+deployment_name = os.getenv("AZURE_OPENAI_DEPLOYMENT_NAME")
+api_version = os.getenv("AZURE_OPENAI_API_VERSION")
 
-    with open(data_path, 'r', encoding='utf-8') as file:
-        reader = csv.DictReader(file)
-        for row in reader:
-            if food_name.lower() in row["Food_Name"].lower():
-                return {
-                    "food_name": row["Food_Name"],
-                    "description": row.get("Description", ""),
-                    "main_ingredients": row.get("Main_Ingredients", ""),
-                    "region": row.get("Region", ""),
-                    "spice_level": row.get("Spice_Level", ""),
-                }
-    return None
+if not all([api_key, base_url, deployment_name, api_version]):
+    raise ValueError(
+        "Missing Azure credentials. Please check .env file for: "
+        "AZURE_OPENAI_API_KEY, AZURE_OPENAI_BASE_URL, AZURE_OPENAI_DEPLOYMENT_NAME, AZURE_OPENAI_API_VERSION"
+    )
 
+# Initialize Azure OpenAI client
 client = AzureOpenAI(
-    api_key=os.getenv("AZURE_OPENAI_API_KEY"),
-    api_version="2024-02-01",
-    azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT"),
-    deployment_name = os.getenv("AZURE_OPENAI_DEPLOYMENT_NAME")
+    api_key=api_key,
+    azure_endpoint=base_url,
+    api_version=api_version
 )
 
-# --- Initialize Tavily Search Client ---
+# ========================================
+# Tavily Search Client
+# ========================================
 tavily_key = os.getenv("TAVILY_API_KEY")
-
 if not tavily_key:
-    raise ValueError("Tavily API key not found. Please set TAVILY_API_KEY in your .env file.")
-
+    raise ValueError("Missing Tavily API key. Please set TAVILY_API_KEY in your .env file.")
 tavily_client = TavilyClient(api_key=tavily_key)
 
-model = SentenceTransformer("all-MiniLM-L6-v2")
-
-# Load local dataset 
+# ========================================
+# Load Local Dataset
+# ========================================
 DATA_PATH = "data/Nigerian Foods.csv"
 if os.path.exists(DATA_PATH):
     food_df = pd.read_csv(DATA_PATH)
 else:
     food_df = None
 
+
+# ========================================
+# Helper 1: TF-IDF Semantic Search (Local Dataset)
+# ========================================
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics.pairwise import cosine_similarity
+
+# --------------------------
+# Helper: Search local dataset (TF-IDF version)
+# --------------------------
 def search_local_dataset(food_name: str, top_k: int = 3):
-    if food_df is None:
+    if food_df is None or "Food_Name" not in food_df.columns:
         return []
 
+    # ✅ Ensure columns exist
     food_names = food_df["Food_Name"].astype(str).tolist()
-    embeddings = model.encode(food_names, convert_to_tensor=True)
-    query_embedding = model.encode(food_name, convert_to_tensor=True)
-    hits = util.semantic_search(query_embedding, embeddings, top_k=top_k)[0]
+    descriptions = (
+        food_df["Description"].astype(str).tolist()
+        if "Description" in food_df.columns
+        else [""] * len(food_names)
+    )
 
+    # Combine food name + description for richer text search
+    combined_texts = [f"{n} {d}" for n, d in zip(food_names, descriptions)]
+
+    # Compute TF-IDF embeddings
+    vectorizer = TfidfVectorizer(stop_words="english")
+    tfidf_matrix = vectorizer.fit_transform(combined_texts)
+    query_vec = vectorizer.transform([food_name])
+
+    # Compute cosine similarity
+    similarities = cosine_similarity(query_vec, tfidf_matrix).flatten()
+    top_indices = similarities.argsort()[-top_k:][::-1]
+
+    # Return top matches
     results = []
-    for hit in hits:
-        row = food_df.iloc[hit["corpus_id"]]
+    for idx in top_indices:
+        row = food_df.iloc[idx]
         results.append({
             "food": row.get("Food_Name", ""),
             "ingredients": row.get("Ingredients", ""),
             "instructions": row.get("Instructions", ""),
-            "similarity": float(hit["score"]),
+            "similarity": float(similarities[idx]),
         })
     return results
 
+
+
+# ========================================
+# Helper 2: Fetch from TheMealDB API
+# ========================================
 def get_recipe_from_mealdb(food_name: str):
+    """
+    Fetches recipe data from TheMealDB API by food name.
+    """
     url = f"https://www.themealdb.com/api/json/v1/1/search.php?s={food_name}"
     try:
         res = requests.get(url)
@@ -114,9 +126,15 @@ def get_recipe_from_mealdb(food_name: str):
         return None
     except Exception:
         return None
-    
 
+
+# ========================================
+# Helper 3: Tavily Web Search
+# ========================================
 def search_tavily(food_name: str):
+    """
+    Uses Tavily API to get relevant web snippets for a given food recipe.
+    """
     try:
         query = f"{food_name} recipe ingredients and preparation"
         results = tavily_client.search(query=query, max_results=5)
@@ -125,20 +143,20 @@ def search_tavily(food_name: str):
         return []
 
 
-# --------------------------
+# ========================================
 # Main Recipe Generation Function
-# --------------------------
+# ========================================
 def generate_recipe(food_name: str):
     """
-    Generates a recipe by grounding data from:
-    1. Local dataset
-    2. TheMealDB API
-    3. Tavily Search
-    Then combines sources using Azure OpenAI GPT-4o.
+    Generates a recipe using combined sources:
+    - Local Nigerian dataset (TF-IDF search)
+    - TheMealDB API
+    - Tavily web search
+    Combines all info into a structured recipe using Azure OpenAI GPT-4o.
     """
     print(f"\n🔍 Searching for recipe: {food_name}")
 
-    # Step 1: Local dataset
+    # Step 1: Local Dataset
     local_results = search_local_dataset(food_name)
     print(f"📘 Local dataset results found: {len(local_results)}")
 
@@ -150,14 +168,14 @@ def generate_recipe(food_name: str):
     tavily_results = search_tavily(food_name)
     print(f"🌐 Tavily search results found: {len(tavily_results)}")
 
-    # Combine data for context
+    # Combine for context
     combined_context = {
         "local_results": local_results,
         "mealdb_recipe": mealdb_recipe,
         "tavily_snippets": tavily_results,
     }
 
-    # Step 4: Generate final structured recipe with GPT-4o
+    # Step 4: Generate Structured Recipe via GPT
     system_prompt = (
         "You are an expert African chef. Generate a detailed recipe JSON for the given food. "
         "Use available data to ensure cultural authenticity and realistic preparation steps. "
@@ -168,7 +186,7 @@ def generate_recipe(food_name: str):
 
     try:
         response = client.chat.completions.create(
-            model="gpt-4o",
+            model=deployment_name,  # use your Azure deployment name
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt},
@@ -176,12 +194,13 @@ def generate_recipe(food_name: str):
             temperature=0.6,
             response_format={"type": "json_object"},
         )
+
         recipe_json = json.loads(response.choices[0].message.content)
-        recipe_json["source"] = "combined (local + API + Tavily)"
+        recipe_json["source"] = "combined (local + TheMealDB + Tavily)"
         return recipe_json
 
     except Exception as e:
-        print(f" Error generating recipe: {e}")
+        print(f"❌ Error generating recipe: {e}")
         return None
 
 
