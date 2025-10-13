@@ -5,6 +5,13 @@ Contains helper functions for recipe generation:
 - Fetch from TheMealDB API
 - Fallback to model generation
 """
+"""
+recipe_tools.py
+Contains helper functions for recipe generation:
+- Search recipes in local dataset
+- Fetch from TheMealDB API
+- Fallback to model generation
+"""
 
 import os
 import yaml
