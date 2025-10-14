@@ -7,7 +7,7 @@ from typing import Optional
 
 import jwt
 from jose import JWTError
-from fastapi import FastAPI, Depends, status
+from fastapi import FastAPI, Depends, status, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.exceptions import HTTPException
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
@@ -36,6 +36,11 @@ from schemas.schema import (
     OTPVerifyRequest,
     ResetPasswordRequest,
     UserCreate,
+)
+from schemas.schema import (
+    RecipePayload,
+    NutritionPayload,
+    PurchasePayload,
 )
 from config.database import otp_record, user_auth
 
@@ -312,6 +317,52 @@ def reset_password(req: ResetPasswordRequest):
     return {"message": "Password reset successfully"}
 
 
+# Feature Enpoints
 
+## Food Classification
+@app.get("/features/food_classification", tags=["Features"])
+def food_classification(image: UploadFile = File(...)):
+    """
+    Accepts file upload (image) and returns classification result among other details
+    """
+    # Main Implementation
 
+    # Store request in DB
 
+    return
+
+## Recipe Generation
+@app.post("/features/recipe_generation", tags=["Features"])
+def recipe_generation(recipe_data: RecipePayload):
+    """
+    Accepts food name and other optional details, returns recipe suggestions
+    """
+    # Main Implementation
+
+    # Store request in DB
+
+    return
+
+## Nutritional Values Generation
+@app.post("/features/nutritional_estimates", tags=["Features"])
+def nutritional_estimates(nutrition_data: NutritionPayload):
+    """
+    Accepts food name and other optional details, returns nutritional estimates
+    """
+    # Main Implementation
+
+    # Store request in DB
+
+    return
+
+## Purchase Locations
+@app.post("/features/purchase_locations", tags=["Features"])
+def purchase_locations(purchase_data: PurchasePayload):
+    """
+    Accepts food name and location details, returns nearby purchase locations
+    """
+    # Main Implementation
+
+    # Store request in DB
+
+    return
