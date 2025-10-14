@@ -4,7 +4,7 @@ from datetime import datetime
 from typing import Optional, Any
 from enum import Enum
 from pydantic import BaseModel, EmailStr, Field, field_validator
-from bson.binary import Binary
+# from bson.binary import Binary
 
 
 class User(BaseModel):
