@@ -61,31 +61,60 @@ from sklearn.metrics.pairwise import cosine_similarity
 # --------------------------
 # Helper: Search local dataset (TF-IDF version)
 # --------------------------
+# def search_local_dataset(food_name: str, top_k: int = 3):
+#     if food_df is None or "Food_Name" not in food_df.columns:
+#         return []
+
+#     # ✅ Ensure columns exist
+#     food_names = food_df["Food_Name"].astype(str).tolist()
+#     descriptions = (
+#         food_df["Description"].astype(str).tolist()
+#         if "Description" in food_df.columns
+#         else [""] * len(food_names)
+#     )
+
+#     # Combine food name + description for richer text search
+#     combined_texts = [f"{n} {d}" for n, d in zip(food_names, descriptions)]
+
+#     # Compute TF-IDF embeddings
+#     vectorizer = TfidfVectorizer(stop_words="english")
+#     tfidf_matrix = vectorizer.fit_transform(combined_texts)
+#     query_vec = vectorizer.transform([food_name])
+
+#     # Compute cosine similarity
+#     similarities = cosine_similarity(query_vec, tfidf_matrix).flatten()
+#     top_indices = similarities.argsort()[-top_k:][::-1]
+
+#     # Return top matches
+#     results = []
+#     for idx in top_indices:
+#         row = food_df.iloc[idx]
+#         results.append({
+#             "food": row.get("Food_Name", ""),
+#             "ingredients": row.get("Ingredients", ""),
+#             "instructions": row.get("Instructions", ""),
+#             "similarity": float(similarities[idx]),
+#         })
+#     return results
+
 def search_local_dataset(food_name: str, top_k: int = 3):
     if food_df is None or "Food_Name" not in food_df.columns:
         return []
 
-    # ✅ Ensure columns exist
     food_names = food_df["Food_Name"].astype(str).tolist()
     descriptions = (
         food_df["Description"].astype(str).tolist()
         if "Description" in food_df.columns
         else [""] * len(food_names)
     )
-
-    # Combine food name + description for richer text search
     combined_texts = [f"{n} {d}" for n, d in zip(food_names, descriptions)]
 
-    # Compute TF-IDF embeddings
     vectorizer = TfidfVectorizer(stop_words="english")
     tfidf_matrix = vectorizer.fit_transform(combined_texts)
     query_vec = vectorizer.transform([food_name])
-
-    # Compute cosine similarity
     similarities = cosine_similarity(query_vec, tfidf_matrix).flatten()
     top_indices = similarities.argsort()[-top_k:][::-1]
 
-    # Return top matches
     results = []
     for idx in top_indices:
         row = food_df.iloc[idx]
@@ -96,6 +125,7 @@ def search_local_dataset(food_name: str, top_k: int = 3):
             "similarity": float(similarities[idx]),
         })
     return results
+
 
 
 
@@ -127,20 +157,26 @@ def get_recipe_from_mealdb(food_name: str):
     except Exception:
         return None
 
+with open("src/recipe-generation/recipe_prompt.yml", "r", encoding="utf-8") as f:
+        prompts = yaml.safe_load(f)
 
 # ========================================
 # Helper 3: Tavily Web Search
 # ========================================
 def search_tavily(food_name: str):
-    """
-    Uses Tavily API to get relevant web snippets for a given food recipe.
-    """
+    tavily_config = prompts.get("tavily", {})
     try:
         query = f"{food_name} recipe ingredients and preparation"
-        results = tavily_client.search(query=query, max_results=5)
+        results = tavily_client.search(
+            query=query,
+            max_results=tavily_config.get("max_results", 5),
+            search_depth=tavily_config.get("search_depth", "basic"),
+            include_domains=tavily_config.get("include_domains", []),
+        )
         return [r["content"] for r in results.get("results", [])]
     except Exception:
         return []
+
 
 
 # ========================================
@@ -176,13 +212,16 @@ def generate_recipe(food_name: str):
     }
 
     # Step 4: Generate Structured Recipe via GPT
-    system_prompt = (
-        "You are an expert African chef. Generate a detailed recipe JSON for the given food. "
-        "Use available data to ensure cultural authenticity and realistic preparation steps. "
-        "Include fields: title, region, category, ingredients, instructions, and estimated_time."
+    
+    system_prompt = prompts.get("recipe_generation_prompt", "")
+
+    user_prompt_template = prompts.get("recipe_generation_prompt", "")
+    user_prompt = user_prompt_template.format(
+        food_name=food_name,
+        context_data=json.dumps(combined_context, indent=2)
     )
 
-    user_prompt = f"Food name: {food_name}\n\nGrounded data:\n{json.dumps(combined_context, indent=2)}"
+    #user_prompt = f"Food name: {food_name}\n\nGrounded data:\n{json.dumps(combined_context, indent=2)}"
 
     try:
         response = client.chat.completions.create(
