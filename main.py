@@ -5,8 +5,7 @@ from dotenv import load_dotenv
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 
-import jwt
-from jose import JWTError
+from jose import jwt, JWTError
 from fastapi import FastAPI, Depends, status, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.exceptions import HTTPException
