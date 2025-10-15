@@ -14,6 +14,7 @@ from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from bson import ObjectId
 from auth.service import resend_otp_service
 from auth.mail import send_email_otp, send_email_welcome
+from bson.binary import Binary
 
 # Authentication
 from auth.mail import send_email_otp
@@ -42,7 +43,7 @@ from schemas.schema import (
     NutritionPayload,
     PurchasePayload,
 )
-from config.database import otp_record, user_auth
+from config.database import otp_record, user_auth, classification_requests
 
 # Load environment variables
 load_dotenv()
@@ -243,9 +244,10 @@ def login_user(form_data: OAuth2PasswordRequestForm = Depends()):
     FastAPI's form dependency expects 'username' and 'password' fields.
     """
     # Check if user exists (can be username or email)
-    user = get_user_via_username(form_data.username)
+    user = user_auth.find_one({"username": form_data.username})
+    print(user)
     if not user:
-        user = get_user_via_email(form_data.username)
+         user = user_auth.find_one({"email": form_data.username})
 
     if not user or not verify_password(form_data.password, user["password_hash"]):
         raise HTTPException(
@@ -320,16 +322,35 @@ def reset_password(req: ResetPasswordRequest):
 # Feature Enpoints
 
 ## Food Classification
-@app.get("/features/food_classification", tags=["Features"])
-def food_classification(image: UploadFile = File(...)):
+@app.post("/features/food_classification", tags=["Features"])
+def food_classification(current_user:dict = Depends(get_current_user), image: UploadFile = File(...)):
     """
     Accepts file upload (image) and returns classification result among other details
     """
     # Main Implementation
+    if not current_user:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    try:
+        email = current_user["email"]
+    
+        image_bytes = image.file.read()
 
-    # Store request in DB
+        # Store request in DB
+        doc= {
+            "email":email,
+            "image":Binary(image_bytes),
+            "timestamp":datetime.utcnow()
+        }
+        result = classification_requests.insert_one(doc)
+        
+        return {"message":"Request saved successfully","request_id":str(result.inserted_id)}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+        
 
-    return
+    
+
+    
 
 ## Recipe Generation
 @app.post("/features/recipe_generation", tags=["Features"])

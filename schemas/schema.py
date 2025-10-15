@@ -4,7 +4,7 @@ from datetime import datetime
 from typing import Optional, Any
 from enum import Enum
 from pydantic import BaseModel, EmailStr, Field, field_validator
-# from bson.binary import Binary
+#from bson.binary import Binary
 
 
 class User(BaseModel):
@@ -46,10 +46,10 @@ class ResetPasswordRequest(BaseModel):
 # Endpoint-specific payloads
 
 # Sample structure for storing classification request in db
-# class ClassificationPayload(BaseModel):
-#     email: EmailStr
-#     image: Binary # Expecting image file in binary format
-#     timestamp: datetime = Field(default_factory=datetime.utcnow)
+class ClassificationPayload(BaseModel):
+    email: EmailStr
+    image: bytes # Expecting image file in binary format
+    timestamp: datetime = Field(default_factory=datetime.utcnow)
 
 
 class RecipePayload(BaseModel):
