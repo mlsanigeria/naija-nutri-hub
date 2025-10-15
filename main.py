@@ -14,6 +14,9 @@ from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from bson import ObjectId
 from auth.service import resend_otp_service
 from auth.mail import send_email_otp, send_email_welcome
+from pydantic import BaseModel, EmailStr as PydanticEmailStr, ValidationError
+from pymongo import MongoClient
+from bson.binary import Binary
 
 # Authentication
 from auth.mail import send_email_otp
@@ -38,6 +41,7 @@ from schemas.schema import (
     UserCreate,
 )
 from schemas.schema import (
+    ClassificationPayload,
     RecipePayload,
     NutritionPayload,
     PurchasePayload,
@@ -320,16 +324,47 @@ def reset_password(req: ResetPasswordRequest):
 # Feature Enpoints
 
 ## Food Classification
-@app.get("/features/food_classification", tags=["Features"])
-def food_classification(image: UploadFile = File(...)):
+@app.post("/features/food_classification", tags=["Features"])
+async def food_classification(image: UploadFile = File(...), current_user: dict = Depends(get_current_user)):
     """
     Accepts file upload (image) and returns classification result among other details
     """
-    # Main Implementation
+    try:
+        img_bytes = await image.read()
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Failed to read uploaded image: {e}")
 
-    # Store request in DB
+    if not img_bytes:
+        raise HTTPException(status_code=400, detail="Empty image file")
 
-    return
+    user_email = current_user.get("email")
+    if not user_email:
+        raise HTTPException(status_code=400, detail="Authenticated user has no email")
+
+    try:
+        payload = ClassificationPayload(email=user_email, image=img_bytes)
+    except ValidationError as ve:
+        raise HTTPException(status_code=400, detail=str(ve))
+
+    mongo_conn = os.getenv("MONGODB_CONNECTION_STRING")
+    if not mongo_conn:
+        raise HTTPException(status_code=500, detail="MONGODB_CONNECTION_STRING not configured")
+
+    try:
+        with MongoClient(mongo_conn, serverSelectionTimeoutMS=5000) as client:
+            client.admin.command("ping")
+            db = client["naija_nutri_hub"]
+            coll = db["classification_requests"]
+
+            doc = {
+                "email": str(payload.email),
+                "image": Binary(payload.image),
+                "timestamp": payload.timestamp
+            }
+            result = coll.insert_one(doc)
+            return {"status": "success", "inserted_id": str(result.inserted_id)}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to save request: {e}")
 
 ## Recipe Generation
 @app.post("/features/recipe_generation", tags=["Features"])
