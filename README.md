@@ -43,12 +43,12 @@ Thank you to all our fantastic contributors for their hard work and dedication! 
 | 2 | 🥈 | <img src='https://avatars.githubusercontent.com/u/103088635?v=4' alt='Avatar' width='30' height='30'> | [KingDavid2908](https://github.com/KingDavid2908) | 2 |
 | 3 | 🥉 | <img src='https://avatars.githubusercontent.com/u/182611319?v=4' alt='Avatar' width='30' height='30'> | [aneeshsunganahalli](https://github.com/aneeshsunganahalli) | 1 |
 | 4 | 🥉 | <img src='https://avatars.githubusercontent.com/u/144328549?v=4' alt='Avatar' width='30' height='30'> | [G26karthik](https://github.com/G26karthik) | 1 |
-| 5 | 🥉 | <img src='https://avatars.githubusercontent.com/u/114394219?v=4' alt='Avatar' width='30' height='30'> | [ishanpeshkar](https://github.com/ishanpeshkar) | 1 |
-| 6 | 🥉 | <img src='https://avatars.githubusercontent.com/u/144631176?v=4' alt='Avatar' width='30' height='30'> | [kingsley-sama](https://github.com/kingsley-sama) | 1 |
-| 7 | 🥉 | <img src='https://avatars.githubusercontent.com/u/178784329?v=4' alt='Avatar' width='30' height='30'> | [lck6055](https://github.com/lck6055) | 1 |
-| 8 | 🥉 | <img src='https://avatars.githubusercontent.com/u/46930761?v=4' alt='Avatar' width='30' height='30'> | [Olyray](https://github.com/Olyray) | 1 |
-| 9 | 🥉 | <img src='https://avatars.githubusercontent.com/u/202189806?v=4' alt='Avatar' width='30' height='30'> | [ryleymao](https://github.com/ryleymao) | 1 |
-| 10 | 🥉 | <img src='https://avatars.githubusercontent.com/u/69307446?v=4' alt='Avatar' width='30' height='30'> | [Treasure-Mayowa](https://github.com/Treasure-Mayowa) | 1 |
+| 5 | 🥉 | <img src='https://avatars.githubusercontent.com/u/88575926?v=4' alt='Avatar' width='30' height='30'> | [GboyeStack-Robotics-ML-Engineer](https://github.com/GboyeStack-Robotics-ML-Engineer) | 1 |
+| 6 | 🥉 | <img src='https://avatars.githubusercontent.com/u/114394219?v=4' alt='Avatar' width='30' height='30'> | [ishanpeshkar](https://github.com/ishanpeshkar) | 1 |
+| 7 | 🥉 | <img src='https://avatars.githubusercontent.com/u/144631176?v=4' alt='Avatar' width='30' height='30'> | [kingsley-sama](https://github.com/kingsley-sama) | 1 |
+| 8 | 🥉 | <img src='https://avatars.githubusercontent.com/u/178784329?v=4' alt='Avatar' width='30' height='30'> | [lck6055](https://github.com/lck6055) | 1 |
+| 9 | 🥉 | <img src='https://avatars.githubusercontent.com/u/46930761?v=4' alt='Avatar' width='30' height='30'> | [Olyray](https://github.com/Olyray) | 1 |
+| 10 | 🥉 | <img src='https://avatars.githubusercontent.com/u/202189806?v=4' alt='Avatar' width='30' height='30'> | [ryleymao](https://github.com/ryleymao) | 1 |
 
 Thank you to all our fantastic contributors for their hard work and dedication!
 
