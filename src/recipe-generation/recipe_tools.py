@@ -61,42 +61,6 @@ from sklearn.metrics.pairwise import cosine_similarity
 # --------------------------
 # Helper: Search local dataset (TF-IDF version)
 # --------------------------
-# def search_local_dataset(food_name: str, top_k: int = 3):
-#     if food_df is None or "Food_Name" not in food_df.columns:
-#         return []
-
-#     # ✅ Ensure columns exist
-#     food_names = food_df["Food_Name"].astype(str).tolist()
-#     descriptions = (
-#         food_df["Description"].astype(str).tolist()
-#         if "Description" in food_df.columns
-#         else [""] * len(food_names)
-#     )
-
-#     # Combine food name + description for richer text search
-#     combined_texts = [f"{n} {d}" for n, d in zip(food_names, descriptions)]
-
-#     # Compute TF-IDF embeddings
-#     vectorizer = TfidfVectorizer(stop_words="english")
-#     tfidf_matrix = vectorizer.fit_transform(combined_texts)
-#     query_vec = vectorizer.transform([food_name])
-
-#     # Compute cosine similarity
-#     similarities = cosine_similarity(query_vec, tfidf_matrix).flatten()
-#     top_indices = similarities.argsort()[-top_k:][::-1]
-
-#     # Return top matches
-#     results = []
-#     for idx in top_indices:
-#         row = food_df.iloc[idx]
-#         results.append({
-#             "food": row.get("Food_Name", ""),
-#             "ingredients": row.get("Ingredients", ""),
-#             "instructions": row.get("Instructions", ""),
-#             "similarity": float(similarities[idx]),
-#         })
-#     return results
-
 def search_local_dataset(food_name: str, top_k: int = 3):
     if food_df is None or "Food_Name" not in food_df.columns:
         return []
@@ -127,8 +91,6 @@ def search_local_dataset(food_name: str, top_k: int = 3):
     return results
 
 
-
-
 # ========================================
 # Helper 2: Fetch from TheMealDB API
 # ========================================
@@ -157,8 +119,15 @@ def get_recipe_from_mealdb(food_name: str):
     except Exception:
         return None
 
-with open("src/recipe-generation/recipe_prompt.yml", "r", encoding="utf-8") as f:
-        prompts = yaml.safe_load(f)
+# --- Helper Function to Load the Prompt ---
+def load_prompt_template():
+    """Loads the recipe generation prompt from the YAML file."""
+    prompt_file_path = Path(__file__).parent / "recipe_prompt.yml"
+    with open(prompt_file_path, 'r', encoding="utf-8") as f:
+        prompt_data = yaml.safe_load(f)
+    return prompt_data
+    
+prompts = load_prompt_template()
 
 # ========================================
 # Helper 3: Tavily Web Search
