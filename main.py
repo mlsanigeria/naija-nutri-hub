@@ -48,7 +48,7 @@ from schemas.schema import (
 # Auth DB
 from config.database import otp_record, user_auth
 # Features DB
-from config.database import classification_requests
+from config.database import classification_requests,nutrition_requests
 
 # Load environment variables
 load_dotenv()
@@ -379,15 +379,38 @@ def recipe_generation(recipe_data: RecipePayload):
 
 ## Nutritional Values Generation
 @app.post("/features/nutritional_estimates", tags=["Features"])
-def nutritional_estimates(nutrition_data: NutritionPayload):
+def nutritional_estimates(nutrition_data: NutritionPayload,current_user:dict = Depends(get_current_user)):
     """
     Accepts food name and other optional details, returns nutritional estimates
     """
     # Main Implementation
-
+    if not current_user:
+        raise HTTPException(status_code=401, detail="Unauthorized")
     # Store request in DB
+    if not nutrition_data.food_name or not nutrition_data.food_name.strip():
+        raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Food name is required and cannot be empty"
+            )
+        
 
-    return
+    try:
+        user_email = current_user["email"]
+        current_timestamp = datetime.utcnow()
+        nutrition_record = {
+            "email": user_email.lower(),
+            "food_name": nutrition_data.food_name.strip(),
+            "portion_size": nutrition_data.portion_size.strip() if nutrition_data.portion_size else None,
+            "extra_inputs": nutrition_data.extra_inputs if nutrition_data.extra_inputs else None,
+            "timestamp": nutrition_data.timestamp if nutrition_data.timestamp else current_timestamp,
+            "created_at": current_timestamp
+         }
+        result = nutrition_requests.insert_one(nutrition_record)
+        return {"status":"successs", "inserted_id":str(result.inserted_id)}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to save request to database: {e}")
+        
+            
 
 ## Purchase Locations
 @app.post("/features/purchase_locations", tags=["Features"])
