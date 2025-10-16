@@ -73,3 +73,4 @@ class PurchasePayload(BaseModel):
     location_query: Optional[str] = None            # e.g. "Surulere, Lagos"
     max_distance_km: Optional[float] = None
     extra_inputs: Optional[dict] = None
+    timestamp: datetime = Field(default_factory=datetime.utcnow)
