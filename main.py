@@ -45,7 +45,7 @@ from schemas.schema import (
     NutritionPayload,
     PurchasePayload,
 )
-from config.database import otp_record, user_auth
+from config.database import otp_record, user_auth, classification_requests
 
 # Load environment variables
 load_dotenv()
@@ -326,7 +326,7 @@ def reset_password(req: ResetPasswordRequest):
 @app.post("/features/food_classification", tags=["Features"])
 async def food_classification(image: UploadFile = File(...), current_user: dict = Depends(get_current_user)):
     """
-    Accepts file upload (image) and returns classification result among other details
+    Accepts file upload (image) and returns classification result among other details.
     """
     try:
         img_bytes = await image.read()
@@ -345,25 +345,18 @@ async def food_classification(image: UploadFile = File(...), current_user: dict 
     except ValidationError as ve:
         raise HTTPException(status_code=400, detail=str(ve))
 
-    mongo_conn = os.getenv("MONGODB_CONNECTION_STRING")
-    if not mongo_conn:
-        raise HTTPException(status_code=500, detail="MONGODB_CONNECTION_STRING not configured")
-
     try:
-        with MongoClient(mongo_conn, serverSelectionTimeoutMS=5000) as client:
-            client.admin.command("ping")
-            db = client["naija_nutri_hub"]
-            coll = db["classification_requests"]
+        doc = {
+            "email": str(payload.email),
+            "image": Binary(payload.image),
+            "timestamp": payload.timestamp
+        }
 
-            doc = {
-                "email": str(payload.email),
-                "image": Binary(payload.image),
-                "timestamp": payload.timestamp
-            }
-            result = coll.insert_one(doc)
-            return {"status": "success", "inserted_id": str(result.inserted_id)}
+        result = classification_requests.insert_one(doc)
+        return {"status": "success", "inserted_id": str(result.inserted_id)}
+
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to save request: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to save request to database: {e}")
 
 ## Recipe Generation
 @app.post("/features/recipe_generation", tags=["Features"])
