@@ -249,7 +249,7 @@ def login_user(form_data: OAuth2PasswordRequestForm = Depends()):
     if not user:
          user = get_user_via_email(form_data.username)
          
-    hashed_password = hash_password(form_data.password)
+    #hashed_password = hash_password(form_data.password)
 
     if not user or not verify_password(form_data.password, hashed_password):
         raise HTTPException(
