@@ -48,7 +48,7 @@ from schemas.schema import (
 # Auth DB
 from config.database import otp_record, user_auth
 # Features DB
-from config.database import classification_requests
+from config.database import classification_requests, recipe_requests
 
 # Load environment variables
 load_dotenv()
@@ -367,15 +367,34 @@ async def food_classification(image: UploadFile = File(...), current_user: dict 
 
 ## Recipe Generation
 @app.post("/features/recipe_generation", tags=["Features"])
+
 def recipe_generation(recipe_data: RecipePayload):
     """
     Accepts food name and other optional details, returns recipe suggestions
     """
-    # Main Implementation
+    request_document = recipe_data.model_dump(exclude_none=True)
+
+    timestamp_value = datetime.now(timezone.utc)
+    request_document["timestamp"] = timestamp_value
+    
+    # Main Implementation (with function calls)
+
 
     # Store request in DB
+    try:
+        result = recipe_requests.insert_one(request_document)
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Failed to store recipe request: {exc}")
+    request_document.pop("_id", None)
 
-    return
+
+    return {
+        "message": "Recipe request stored successfully.",
+        "stored_request": {
+            **{key: value for key, value in request_document.items() if key != "timestamp"},
+            "timestamp": request_document["timestamp"].isoformat() if "timestamp" in request_document else None,
+        },
+    }
 
 ## Nutritional Values Generation
 @app.post("/features/nutritional_estimates", tags=["Features"])
@@ -401,3 +420,4 @@ def purchase_locations(purchase_data: PurchasePayload):
 
 
     return
+
