@@ -58,14 +58,14 @@ class RecipePayload(BaseModel):
     servings: Optional[float] = None
     dietary_restrictions: Optional[List[str]] = None
     extra_inputs: Optional[dict] = None             # e.g. {"preferred_cuisine": "yoruba"}
-    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    timestamp: Optional[datetime] = Field(default_factory=datetime.utcnow)
 
 class NutritionPayload(BaseModel):
     email: EmailStr
     food_name: str
     portion_size: Optional[str] = None              # e.g. "1 cup", "200g"
     extra_inputs: Optional[dict] = None
-    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    timestamp: Optional[datetime] = Field(default_factory=datetime.utcnow)
 
 class PurchasePayload(BaseModel):
     email: EmailStr
@@ -73,4 +73,4 @@ class PurchasePayload(BaseModel):
     location_query: Optional[str] = None            # e.g. "Surulere, Lagos"
     max_distance_km: Optional[float] = None
     extra_inputs: Optional[dict] = None
-    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    timestamp: Optional[datetime] = Field(default_factory=datetime.utcnow)
