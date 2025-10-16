@@ -49,7 +49,7 @@ from schemas.schema import (
 from config.database import otp_record, user_auth
 # Features DB
 
-from config.database import classification_requests, recipe_requests,nutrition_requests
+from config.database import classification_requests, recipe_requests, nutrition_requests
 
 
 # Load environment variables
@@ -400,21 +400,24 @@ def recipe_generation(recipe_data: RecipePayload):
 
 ## Nutritional Values Generation
 @app.post("/features/nutritional_estimates", tags=["Features"])
-def nutritional_estimates(nutrition_data: NutritionPayload,current_user:dict = Depends(get_current_user)):
+def nutritional_estimates(nutrition_data: NutritionPayload, current_user:dict = Depends(get_current_user)):
     """
     Accepts food name and other optional details, returns nutritional estimates
     """
-    # Main Implementation
+    
     if not current_user:
         raise HTTPException(status_code=401, detail="Unauthorized")
-    # Store request in DB
+
     if not nutrition_data.food_name or not nutrition_data.food_name.strip():
         raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Food name is required and cannot be empty"
             )
         
+    # Main Implementation (with function calls)
 
+    
+    # Store request in DB
     try:
         user_email = current_user["email"]
         current_timestamp = datetime.utcnow()
@@ -445,4 +448,5 @@ def purchase_locations(purchase_data: PurchasePayload):
 
 
     return
+
 
