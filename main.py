@@ -46,9 +46,9 @@ from schemas.schema import (
     PurchasePayload,
 )
 # Auth DB
-from config.database import otp_record, user_auth,recipe_requests
+from config.database import otp_record, user_auth
 # Features DB
-from config.database import classification_requests
+from config.database import classification_requests, recipe_requests
 
 # Load environment variables
 load_dotenv()
@@ -376,7 +376,11 @@ def recipe_generation(recipe_data: RecipePayload):
 
     timestamp_value = datetime.now(timezone.utc)
     request_document["timestamp"] = timestamp_value
+    
+    # Main Implementation (with function calls)
 
+
+    # Store request in DB
     try:
         result = recipe_requests.insert_one(request_document)
     except Exception as exc:
@@ -416,3 +420,4 @@ def purchase_locations(purchase_data: PurchasePayload):
 
 
     return
+
