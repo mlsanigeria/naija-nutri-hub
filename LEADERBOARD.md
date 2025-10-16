@@ -15,10 +15,12 @@ Celebrate the remarkable contributions of our top contributors.
 | 6 | 🥉 | <img src='https://avatars.githubusercontent.com/u/114394219?v=4' alt='Avatar' width='30' height='30'> | [ishanpeshkar](https://github.com/ishanpeshkar) | 1 |
 | 7 | 🥉 | <img src='https://avatars.githubusercontent.com/u/144631176?v=4' alt='Avatar' width='30' height='30'> | [kingsley-sama](https://github.com/kingsley-sama) | 1 |
 | 8 | 🥉 | <img src='https://avatars.githubusercontent.com/u/178784329?v=4' alt='Avatar' width='30' height='30'> | [lck6055](https://github.com/lck6055) | 1 |
-| 9 | 🥉 | <img src='https://avatars.githubusercontent.com/u/46930761?v=4' alt='Avatar' width='30' height='30'> | [Olyray](https://github.com/Olyray) | 1 |
-| 10 | 🥉 | <img src='https://avatars.githubusercontent.com/u/202189806?v=4' alt='Avatar' width='30' height='30'> | [ryleymao](https://github.com/ryleymao) | 1 |
-| 11 | 🥉 | <img src='https://avatars.githubusercontent.com/u/69307446?v=4' alt='Avatar' width='30' height='30'> | [Treasure-Mayowa](https://github.com/Treasure-Mayowa) | 1 |
-| 12 | 🥉 | <img src='https://avatars.githubusercontent.com/u/71001844?v=4' alt='Avatar' width='30' height='30'> | [zendrix396](https://github.com/zendrix396) | 1 |
+| 9 | 🥉 | <img src='https://avatars.githubusercontent.com/u/173927960?v=4' alt='Avatar' width='30' height='30'> | [Nishchal-29](https://github.com/Nishchal-29) | 1 |
+| 10 | 🥉 | <img src='https://avatars.githubusercontent.com/u/46930761?v=4' alt='Avatar' width='30' height='30'> | [Olyray](https://github.com/Olyray) | 1 |
+| 11 | 🥉 | <img src='https://avatars.githubusercontent.com/u/106810199?v=4' alt='Avatar' width='30' height='30'> | [Omoytom](https://github.com/Omoytom) | 1 |
+| 12 | 🥉 | <img src='https://avatars.githubusercontent.com/u/202189806?v=4' alt='Avatar' width='30' height='30'> | [ryleymao](https://github.com/ryleymao) | 1 |
+| 13 | 🥉 | <img src='https://avatars.githubusercontent.com/u/69307446?v=4' alt='Avatar' width='30' height='30'> | [Treasure-Mayowa](https://github.com/Treasure-Mayowa) | 1 |
+| 14 | 🥉 | <img src='https://avatars.githubusercontent.com/u/71001844?v=4' alt='Avatar' width='30' height='30'> | [zendrix396](https://github.com/zendrix396) | 1 |
 
 A heartfelt **thank you** to all our fantastic contributors for their hard work and dedication! Together, we're making a difference in the open-source community.
 
