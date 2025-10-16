@@ -45,7 +45,10 @@ from schemas.schema import (
     NutritionPayload,
     PurchasePayload,
 )
-from config.database import otp_record, user_auth, classification_requests
+# Auth DB
+from config.database import otp_record, user_auth
+# Features DB
+from config.database import classification_requests
 
 # Load environment variables
 load_dotenv()
@@ -345,6 +348,10 @@ async def food_classification(image: UploadFile = File(...), current_user: dict 
     except ValidationError as ve:
         raise HTTPException(status_code=400, detail=str(ve))
 
+    # Main Implementation (with function calls)
+    
+
+    # Store request in DB
     try:
         doc = {
             "email": str(payload.email),
@@ -391,5 +398,6 @@ def purchase_locations(purchase_data: PurchasePayload):
     # Main Implementation
 
     # Store request in DB
+
 
     return
