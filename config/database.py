@@ -26,7 +26,8 @@ purchase_loc_requests = feature_db["purchase_loc_requests"]
 from bson import ObjectId
 
 
-"""test_user = {
+"""
+test_user = {
     "_id": ObjectId(),  # explicitly generate ObjectId
     "email": "testuser@example.com",
     "name": "Test User",
@@ -37,4 +38,5 @@ from bson import ObjectId
 
 # Insert user
 user_auth.insert_one(test_user)
-print("Test user inserted!")"""
+print("Test user inserted!")
+"""

@@ -29,7 +29,6 @@ def user_serializer(user: dict) -> dict:
 def get_user_via_email(email: str):
     """Fetches a user from the database by their email."""
     user = user_auth.find_one({"email": email})
-    print(user)
     return user_serializer(user)
 
 
