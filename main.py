@@ -374,9 +374,8 @@ def recipe_generation(recipe_data: RecipePayload):
     """
     request_document = recipe_data.model_dump(exclude_none=True)
 
-    timestamp_value = request_document.get("timestamp")
-    if timestamp_value and timestamp_value.tzinfo is None:
-        request_document["timestamp"] = timestamp_value.replace(tzinfo=timezone.utc)
+    timestamp_value = datetime.now(timezone.utc)
+    request_document["timestamp"] = timestamp_value
 
     try:
         result = recipe_requests.insert_one(request_document)
