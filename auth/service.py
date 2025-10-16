@@ -37,6 +37,11 @@ def get_user_via_username(username: str):
     user = user_auth.find_one({"username": username})
     return user_serializer(user)
 
+def _get_user_for_auth_by_email(email: str):
+    return user_auth.find_one({"email": email})
+
+def _get_user_for_auth_by_username(username: str):
+    return user_auth.find_one({"username": username})
 
 def user_exists_email(email: str) -> bool:
     """

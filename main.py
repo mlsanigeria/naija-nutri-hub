@@ -24,6 +24,8 @@ from auth.service import (
     generate_otp,
     get_user_via_email,
     get_user_via_username,
+    _get_user_for_auth_by_username,
+    _get_user_for_auth_by_email,
     user_exists_email,
     user_exists_username,
     user_serializer,
@@ -249,9 +251,9 @@ def login_user(form_data: OAuth2PasswordRequestForm = Depends()):
     FastAPI's form dependency expects 'username' and 'password' fields.
     """
     # Check if user exists (can be username or email)
-    user = get_user_via_username(form_data.username)
+    user = _get_user_for_auth_by_username(form_data.username)
     if not user:
-        user = get_user_via_email(form_data.username)
+        user = _get_user_for_auth_by_email(form_data.username)
 
     if not user or not verify_password(form_data.password, user["password_hash"]):
         raise HTTPException(
