@@ -1,7 +1,6 @@
 ﻿annotated-types==0.7.0
 anyio==4.11.0
 bcrypt==4.3.0
-bson==0.5.10
 certifi==2025.8.3
 cffi==2.0.0
 charset-normalizer==3.4.3
