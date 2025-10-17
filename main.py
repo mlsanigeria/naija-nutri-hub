@@ -5,14 +5,17 @@ from dotenv import load_dotenv
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 
-import jwt
-from jose import JWTError
-from fastapi import FastAPI, Depends, status
+from jose import jwt, JWTError
+from fastapi import FastAPI, Depends, status, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.exceptions import HTTPException
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from bson import ObjectId
 from auth.service import resend_otp_service
+from auth.mail import send_email_otp, send_email_welcome
+from pydantic import BaseModel, EmailStr as PydanticEmailStr, ValidationError
+from pymongo import MongoClient
+from bson.binary import Binary
 
 # Authentication
 from auth.mail import send_email_otp
@@ -36,7 +39,18 @@ from schemas.schema import (
     ResetPasswordRequest,
     UserCreate,
 )
+from schemas.schema import (
+    ClassificationPayload,
+    RecipePayload,
+    NutritionPayload,
+    PurchasePayload,
+)
+# Auth DB
 from config.database import otp_record, user_auth
+# Features DB
+
+from config.database import classification_requests, recipe_requests, nutrition_requests
+
 
 # Load environment variables
 load_dotenv()
@@ -106,62 +120,122 @@ def index():
 # Create new user
 @app.post("/sign-up", tags=["Authentication"])
 def sign_up_user(user_data: UserCreate):
-    """Handles new user registration."""
+    """Handles new user registration and sends OTP for verification."""
     if user_exists_email(user_data.email):
         raise HTTPException(status_code=400, detail="Email already registered")
     if user_exists_username(user_data.username):
         raise HTTPException(status_code=400, detail="Username already taken")
 
+    # Create the user
     new_user = create_user(user_data)
-    return {"message": "User created successfully!", "user": new_user}
+    
+    try:
+        # Generate OTP
+        otp_code = generate_otp()
+        
+        # Store OTP in database
+        otp_data = {
+            "email": user_data.email,
+            "otp": otp_code,
+            "created_at": datetime.now(timezone.utc),
+        }
+        otp_record.insert_one(otp_data)
+        
+        # Send OTP email
+        user_name = f"{user_data.firstname} {user_data.lastname}".strip()
+        email_result = send_email_otp(
+            receiver_email=user_data.email,
+            otp_code=otp_code,
+            expiry_minutes=5,
+            user_name=user_name
+        )
+        
+        # Check if email sending failed
+        if not email_result.get("success", False):
+            # Rollback: delete the OTP record if email fails
+            otp_record.delete_one({"email": user_data.email})
+            raise HTTPException(
+                status_code=500, 
+                detail=f"User created but failed to send OTP email: {email_result.get('message', 'Unknown error')}"
+            )
+        
+        return {
+            "message": "User created successfully! OTP sent to your email.",
+            "user": new_user,
+            "email_sent": True
+        }
+        
+    except HTTPException:
+        # Re-raise HTTPException as-is
+        raise
+    except Exception as e:
+        # Handle any unexpected errors
+        otp_record.delete_one({"email": user_data.email})
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error sending OTP: {str(e)}"
+        )
 
 
 @app.post("/verify", tags=["Authentication"])
 def verify_user_account(otp_data: OTPVerifyRequest):
-    """ Verify user account using OTP"""
+    """ Verify user account using OTP and send welcome email """
 
-    # Check the OTP record
     otp_rec = otp_record.find_one({
         "email": otp_data.email,
         "otp": otp_data.otp
     })
-
     if not otp_rec:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Incorrect OTP",
-        ) 
-    
-    # Check for 10 minutes otp expiry 
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Incorrect OTP")
+
+    OTP_EXPIRY_MINUTES = 5
     otp_age = datetime.now(timezone.utc) - otp_rec["created_at"]
-    OTP_EXPIRY_MINUTES = 10
-    
     if otp_age > timedelta(minutes=OTP_EXPIRY_MINUTES):
-        # Delete expired OTP
         otp_record.delete_one({"email": otp_rec["email"]})
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="OTP has expired. Please request a new one"
-        )
-    
-    # Find user
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="OTP has expired. Please request a new one")
+
     user = user_auth.find_one({"email": otp_rec["email"]})
-
     if not user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="User not found"
-        )
-    
-    user_auth.update_one({"email": user["email"]}, {
-        "$set": {
-            "is_verified": True,
-            "updated_at": datetime.now(timezone.utc)
-        }
-    })
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
 
-    otp_record.delete_one({"email": otp_rec["email"]})
-    return {"message": "Account verified successfully"}
+    if user.get("is_verified") is True:
+        otp_record.delete_one({"email": otp_rec["email"]})
+        return {"message": "Account already verified"}
+
+    set_verified = False
+    try:
+        # Mark verified
+        user_auth.update_one({"email": user["email"]}, {
+            "$set": {"is_verified": True, "updated_at": datetime.now(timezone.utc)}
+        })
+        set_verified = True
+
+        # Send welcome email
+        user_name = user.get('firstname', '').strip() or user.get("username", "there").strip()
+        send_result = send_email_welcome(user_name=user_name, receiver=user["email"])
+
+        ok = isinstance(send_result, dict) and send_result.get("status") == "success"
+        if not ok:
+            # Rollback verification and keep OTP so user can retry
+            user_auth.update_one({"email": user["email"]}, {
+                "$set": {"is_verified": False, "updated_at": datetime.now(timezone.utc)}
+            })
+            err_msg = (send_result or {}).get("message", "Failed to send welcome email")
+            raise HTTPException(status_code=500, detail=f"Verification succeeded, but Welcome email failed: {err_msg}")
+
+        # Success: delete OTP
+        otp_record.delete_one({"email": otp_rec["email"]})
+        return {"message": "Account verified successfully. Welcome email sent.", "email_sent": True}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        if set_verified:
+            user_auth.update_one({"email": user["email"]}, {
+                "$set": {"is_verified": False, "updated_at": datetime.now(timezone.utc)}
+            })
+        raise HTTPException(status_code=500, detail=f"Unexpected error during verification email: {str(e)}")
+
 
 
 @app.post("/resend_otp", tags=["Authentication"])
@@ -249,4 +323,130 @@ def reset_password(req: ResetPasswordRequest):
 
     otp_record.delete_one({"email": req.email})
     return {"message": "Password reset successfully"}
+
+
+# Feature Enpoints
+
+## Food Classification
+@app.post("/features/food_classification", tags=["Features"])
+async def food_classification(image: UploadFile = File(...), current_user: dict = Depends(get_current_user)):
+    """
+    Accepts file upload (image) and returns classification result among other details.
+    """
+    try:
+        img_bytes = await image.read()
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Failed to read uploaded image: {e}")
+
+    if not img_bytes:
+        raise HTTPException(status_code=400, detail="Empty image file")
+
+    user_email = current_user.get("email")
+    if not user_email:
+        raise HTTPException(status_code=400, detail="Authenticated user has no email")
+
+    try:
+        payload = ClassificationPayload(email=user_email, image=img_bytes)
+    except ValidationError as ve:
+        raise HTTPException(status_code=400, detail=str(ve))
+
+    # Main Implementation (with function calls)
+    
+
+    # Store request in DB
+    try:
+        doc = {
+            "email": str(payload.email),
+            "image": Binary(payload.image),
+            "timestamp": payload.timestamp
+        }
+
+        result = classification_requests.insert_one(doc)
+        return {"status": "success", "inserted_id": str(result.inserted_id)}
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to save request to database: {e}")
+
+## Recipe Generation
+@app.post("/features/recipe_generation", tags=["Features"])
+
+def recipe_generation(recipe_data: RecipePayload):
+    """
+    Accepts food name and other optional details, returns recipe suggestions
+    """
+    request_document = recipe_data.model_dump(exclude_none=True)
+
+    timestamp_value = datetime.now(timezone.utc)
+    request_document["timestamp"] = timestamp_value
+    
+    # Main Implementation (with function calls)
+
+
+    # Store request in DB
+    try:
+        result = recipe_requests.insert_one(request_document)
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Failed to store recipe request: {exc}")
+    request_document.pop("_id", None)
+
+
+    return {
+        "message": "Recipe request stored successfully.",
+        "stored_request": {
+            **{key: value for key, value in request_document.items() if key != "timestamp"},
+            "timestamp": request_document["timestamp"].isoformat() if "timestamp" in request_document else None,
+        },
+    }
+
+## Nutritional Values Generation
+@app.post("/features/nutritional_estimates", tags=["Features"])
+def nutritional_estimates(nutrition_data: NutritionPayload, current_user:dict = Depends(get_current_user)):
+    """
+    Accepts food name and other optional details, returns nutritional estimates
+    """
+    
+    if not current_user:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
+    if not nutrition_data.food_name or not nutrition_data.food_name.strip():
+        raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Food name is required and cannot be empty"
+            )
+        
+    # Main Implementation (with function calls)
+
+    
+    # Store request in DB
+    try:
+        user_email = current_user["email"]
+        current_timestamp = datetime.utcnow()
+        nutrition_record = {
+            "email": user_email.lower(),
+            "food_name": nutrition_data.food_name.strip(),
+            "portion_size": nutrition_data.portion_size.strip() if nutrition_data.portion_size else None,
+            "extra_inputs": nutrition_data.extra_inputs if nutrition_data.extra_inputs else None,
+            "timestamp": nutrition_data.timestamp if nutrition_data.timestamp else current_timestamp,
+            "created_at": current_timestamp
+         }
+        result = nutrition_requests.insert_one(nutrition_record)
+        return {"status":"successs", "inserted_id":str(result.inserted_id)}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to save request to database: {e}")
+        
+            
+
+## Purchase Locations
+@app.post("/features/purchase_locations", tags=["Features"])
+def purchase_locations(purchase_data: PurchasePayload):
+    """
+    Accepts food name and location details, returns nearby purchase locations
+    """
+    # Main Implementation
+
+    # Store request in DB
+
+
+    return
+
 
