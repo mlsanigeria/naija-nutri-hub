@@ -51,6 +51,8 @@ from config.database import otp_record, user_auth
 
 from config.database import classification_requests, recipe_requests, nutrition_requests
 
+# Import the recipe generation function
+from src.recipe_generation.recipe_generation import get_recipe_for_dish
 
 # Load environment variables
 load_dotenv()
@@ -370,32 +372,54 @@ async def food_classification(image: UploadFile = File(...), current_user: dict 
 ## Recipe Generation
 @app.post("/features/recipe_generation", tags=["Features"])
 
-def recipe_generation(recipe_data: RecipePayload):
+async def recipe_generation(recipe_data: RecipePayload,current_user:dict=Depends(get_current_user)):
     """
     Accepts food name and other optional details, returns recipe suggestions
     """
-    request_document = recipe_data.model_dump(exclude_none=True)
+     # Validate authentication
+    if not current_user:
+        raise HTTPException(status_code=401, detail="Unauthorized")
 
-    timestamp_value = datetime.now(timezone.utc)
-    request_document["timestamp"] = timestamp_value
+    if not recipe_data.food_name or not recipe_data.food_name.strip():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Food name is required and cannot be empty"
+        )
+     # Call the recipe generation logic
+    try:
+        generated_recipe = get_recipe_for_dish(recipe_data.food_name.strip())
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Recipe generation failed: {exc}")
+    if not generated_recipe:
+        raise HTTPException(status_code=404, detail="Unable to generate recipe for the requested dish.")
     
-    # Main Implementation (with function calls)
-
-
     # Store request in DB
     try:
+        request_document = recipe_data.model_dump(exclude_none=True)
+        timestamp_value = datetime.now(timezone.utc)
+        request_document["timestamp"] = timestamp_value
+        request_document["user_email"] = current_user.get("email")
+        request_document["generated_recipe"] = generated_recipe
         result = recipe_requests.insert_one(request_document)
+        request_document.pop("_id", None)
     except Exception as exc:
         raise HTTPException(status_code=500, detail=f"Failed to store recipe request: {exc}")
-    request_document.pop("_id", None)
+    
 
 
     return {
         "message": "Recipe request stored successfully.",
-        "stored_request": {
-            **{key: value for key, value in request_document.items() if key != "timestamp"},
+        "food_name": recipe_data.food_name.strip(),
+        "generated_recipe": generated_recipe,
+        "request_metadata": {
             "timestamp": request_document["timestamp"].isoformat() if "timestamp" in request_document else None,
+            "user_email": request_document.get("user_email"),
+            "request_id": str(result.inserted_id),
         },
+        # "stored_request": {
+        #     **{key: value for key, value in request_document.items() if key != "timestamp"},
+        #     "timestamp": request_document["timestamp"].isoformat() if "timestamp" in request_document else None,
+        # },
     }
 
 ## Nutritional Values Generation
