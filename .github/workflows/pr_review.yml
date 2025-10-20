@@ -1,0 +1,41 @@
+name: LLM Code Review
+on:
+  pull_request:
+    types: [opened, synchronize]
+jobs:
+  llama-review:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout PR code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Install Docker
+        run: |
+          curl -fsSL https://get.docker.com -o get-docker.sh
+          sh get-docker.sh
+          sudo usermod -aG docker $USER
+          docker --version
+      - name: Install Docker Model Runner (DMR)
+        run: |
+          sudo apt-get update
+          sudo apt-get install docker-model-plugin
+          docker model version
+      - name: Pull LLM model
+        run: docker model pull ai/granite-4.0-h-micro:3B
+      - name: Run LLM Code Review
+        run: |
+          chmod +x ./review_diff.sh
+          ./review_diff.sh > model_review.md
+      - name: Post AI Comment via API
+        env:
+          GH_TOKEN: ${{ secrets.MY_GITHUB_TOKEN }}
+        run: |
+          COMMENT=$(jq -Rs . < model_review.md)
+          curl -X POST \
+            -H "Authorization: token $GH_TOKEN" \
+            -H "Accept: application/vnd.github.v3+json" \
+            -H "Content-Type: application/json" \
+            https://api.github.com/repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/comments \
+            -d "{\"body\": $COMMENT}"
