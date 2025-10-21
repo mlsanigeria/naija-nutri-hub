@@ -9,7 +9,8 @@ MODEL="${MODEL:-ai/granite-4.0-h-micro:3B}"
 BASE_BRANCH="${BASE_BRANCH:-main}"
 SECRET_PATTERNS_FILE="${SECRET_PATTERNS_FILE:-}"
 MAX_FILE_SIZE_KB="${MAX_FILE_SIZE_KB:-500}"
-SUPPORTED_EXTENSIONS="${SUPPORTED_EXTENSIONS:-.py .js .ts .go .java .rb .sh .yaml .yml .json .tf}"
+SUPPORTED_EXTENSIONS="${SUPPORTED_EXTENSIONS:-.py .js .ts .go .java .rb .sh .yaml .yml .json .tf .tsx .jsx}"
+DRY_RUN="${DRY_RUN:-false}"
 
 # ============================================================================
 # Logging utilities
@@ -20,55 +21,242 @@ log_error() { echo "[ERROR] $*" >&2; }
 log_fatal() { log_error "$@"; exit 1; }
 
 # ============================================================================
-# Preflight checks
+# Usage information
 # ============================================================================
-command -v git >/dev/null 2>&1 || log_fatal "git is not installed or not in PATH"
-command -v docker >/dev/null 2>&1 || log_fatal "docker is not installed or not in PATH"
-git rev-parse --git-dir >/dev/null 2>&1 || log_fatal "Not inside a git repository"
+usage() {
+    cat >&2 <<EOF
+Usage: $0 [OPTIONS] [BRANCH_NAME]
+
+Automated code review using LLM for pull requests.
+
+OPTIONS:
+    -h, --help              Show this help message
+    -d, --dry-run           Generate template report without actual review
+    -b, --base BRANCH       Base branch to compare against (default: main)
+    -m, --model MODEL       LLM model to use (default: ai/granite-4.0-h-micro:3B)
+    -o, --output FILE       Output report file (default: model_review.md)
+
+ARGUMENTS:
+    BRANCH_NAME            PR branch to review (optional, auto-detected in CI)
+
+ENVIRONMENT VARIABLES:
+    GITHUB_HEAD_REF                     GitHub Actions PR branch
+    CI_MERGE_REQUEST_SOURCE_BRANCH_NAME GitLab CI PR branch
+    BASE_BRANCH                         Base branch (default: main)
+    DRY_RUN                             Set to 'true' for dry-run mode
+    REPORT_FILE                         Output file path
+    MODEL                               LLM model identifier
+
+EXAMPLES:
+    # Review specific branch
+    $0 feature/new-api
+
+    # GitHub Actions (auto-detects PR branch)
+    $0
+
+    # GitLab CI with custom base
+    BASE_BRANCH=develop $0
+
+    # Dry-run mode
+    $0 --dry-run
+
+    # Custom model and output
+    $0 --model ai/custom:latest --output review.txt feature/bugfix
+EOF
+    exit 1
+}
 
 # ============================================================================
-# Branch detection and checkout
+# Parse command-line arguments
 # ============================================================================
-detect_and_checkout_branch() {
+parse_args() {
+    while [[ $# -gt 0 ]]; do
+        case $1 in
+            -h|--help)
+                usage
+                ;;
+            -d|--dry-run)
+                DRY_RUN=true
+                shift
+                ;;
+            -b|--base)
+                BASE_BRANCH="$2"
+                shift 2
+                ;;
+            -m|--model)
+                MODEL="$2"
+                shift 2
+                ;;
+            -o|--output)
+                REPORT_FILE="$2"
+                shift 2
+                ;;
+            -*)
+                log_error "Unknown option: $1"
+                usage
+                ;;
+            *)
+                # Positional argument (branch name)
+                echo "$1"
+                return
+                ;;
+        esac
+    done
+    echo ""
+}
+
+# ============================================================================
+# Preflight checks
+# ============================================================================
+preflight_checks() {
+    command -v git >/dev/null 2>&1 || log_fatal "git is not installed or not in PATH"
+    git rev-parse --git-dir >/dev/null 2>&1 || log_fatal "Not inside a git repository"
+    
+    if [[ "$DRY_RUN" == "false" ]]; then
+        command -v docker >/dev/null 2>&1 || log_fatal "docker is not installed or not in PATH"
+    fi
+}
+
+# ============================================================================
+# Detect PR context
+# ============================================================================
+detect_pr_context() {
+    local explicit_branch="${1:-}"
     local pr_branch=""
+    local context_type="none"
     
     # Priority 1: Explicit argument
-    if [[ -n "${1:-}" ]]; then
-        pr_branch="$1"
-        log_info "Using branch from argument: $pr_branch"
+    if [[ -n "$explicit_branch" ]]; then
+        pr_branch="$explicit_branch"
+        context_type="explicit"
+        log_info "Using explicitly provided branch: $pr_branch"
+    
     # Priority 2: GitHub Actions
     elif [[ -n "${GITHUB_HEAD_REF:-}" ]]; then
         pr_branch="$GITHUB_HEAD_REF"
-        log_info "Detected GitHub Actions PR branch: $pr_branch"
+        context_type="github-actions"
+        log_info "Detected GitHub Actions PR context"
+        log_info "  PR Branch: $GITHUB_HEAD_REF"
+        log_info "  Base Branch: ${GITHUB_BASE_REF:-unknown}"
+        log_info "  Repository: ${GITHUB_REPOSITORY:-unknown}"
+        log_info "  PR Number: ${GITHUB_REF##*/}"
+        
+        # Override base branch if provided by GitHub
+        if [[ -n "${GITHUB_BASE_REF:-}" ]]; then
+            BASE_BRANCH="$GITHUB_BASE_REF"
+            log_info "Using GitHub base branch: $BASE_BRANCH"
+        fi
+    
     # Priority 3: GitLab CI
     elif [[ -n "${CI_MERGE_REQUEST_SOURCE_BRANCH_NAME:-}" ]]; then
         pr_branch="$CI_MERGE_REQUEST_SOURCE_BRANCH_NAME"
-        log_info "Detected GitLab CI PR branch: $pr_branch"
-    # Priority 4: Current branch (fallback)
+        context_type="gitlab-ci"
+        log_info "Detected GitLab CI PR context"
+        log_info "  PR Branch: $CI_MERGE_REQUEST_SOURCE_BRANCH_NAME"
+        log_info "  Target Branch: ${CI_MERGE_REQUEST_TARGET_BRANCH_NAME:-unknown}"
+        log_info "  Project: ${CI_PROJECT_PATH:-unknown}"
+        log_info "  MR IID: ${CI_MERGE_REQUEST_IID:-unknown}"
+        
+        # Override base branch if provided by GitLab
+        if [[ -n "${CI_MERGE_REQUEST_TARGET_BRANCH_NAME:-}" ]]; then
+            BASE_BRANCH="$CI_MERGE_REQUEST_TARGET_BRANCH_NAME"
+            log_info "Using GitLab target branch: $BASE_BRANCH"
+        fi
+    
+    # Priority 4: Current branch (fallback - requires warning)
     else
         pr_branch=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "")
         if [[ -z "$pr_branch" || "$pr_branch" == "HEAD" ]]; then
             log_fatal "Could not determine branch name (detached HEAD?)"
         fi
-        log_warn "No PR context detected, using current branch: $pr_branch"
+        context_type="fallback"
+        log_warn "⚠️  NO PR CONTEXT DETECTED"
+        log_warn "  Using current branch: $pr_branch"
+        log_warn "  This may produce incorrect results if not in a PR"
+        log_warn "  Consider providing branch explicitly: $0 $pr_branch"
     fi
     
-    # Validate branch name is non-empty
+    # Validate branch name
     [[ -n "$pr_branch" ]] || log_fatal "Branch name is empty after detection"
     
-    # Attempt checkout if not already on target branch
+    # Output context information
+    echo "$pr_branch|$context_type"
+}
+
+# ============================================================================
+# Checkout branch
+# ============================================================================
+checkout_branch() {
+    local pr_branch="$1"
+    local context_type="$2"
+    
     local current_branch
-    current_branch=$(git rev-parse --abbrev-ref HEAD)
-    if [[ "$current_branch" != "$pr_branch" ]]; then
-        log_info "Checking out branch: $pr_branch"
-        if ! git checkout "$pr_branch" 2>/dev/null; then
-            log_fatal "Failed to checkout branch '$pr_branch'"
-        fi
-    else
+    current_branch=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "")
+    
+    # Skip checkout if already on target branch
+    if [[ "$current_branch" == "$pr_branch" ]]; then
         log_info "Already on branch: $pr_branch"
+        return 0
     fi
     
-    echo "$pr_branch"
+    # Skip checkout in fallback mode (already on the branch)
+    if [[ "$context_type" == "fallback" ]]; then
+        log_warn "Skipping checkout in fallback mode"
+        return 0
+    fi
+    
+    # In CI environments, we're often already on the PR branch (detached HEAD or direct checkout)
+    # Check if current HEAD matches the PR branch
+    local current_commit
+    current_commit=$(git rev-parse HEAD 2>/dev/null || echo "")
+    
+    # Try to resolve the PR branch commit (may not exist locally yet)
+    local pr_branch_commit
+    pr_branch_commit=$(git rev-parse "origin/$pr_branch" 2>/dev/null || \
+                       git rev-parse "$pr_branch" 2>/dev/null || echo "")
+    
+    if [[ -n "$current_commit" && "$current_commit" == "$pr_branch_commit" ]]; then
+        log_info "Already at PR branch commit (detached HEAD or direct checkout)"
+        log_info "Current HEAD: $current_commit"
+        return 0
+    fi
+    
+    # Perform checkout
+    log_info "Checking out branch: $pr_branch"
+    
+    # First, try direct checkout (branch exists locally)
+    if git checkout "$pr_branch" 2>/dev/null; then
+        log_info "Successfully checked out local branch: $pr_branch"
+        return 0
+    fi
+    
+    # Branch doesn't exist locally, try fetching from origin
+    log_info "Branch not found locally, fetching from origin..."
+    
+    # Fetch the specific branch with full history
+    if git fetch origin "$pr_branch:$pr_branch" 2>/dev/null; then
+        log_info "Fetched branch from origin"
+        if git checkout "$pr_branch" 2>/dev/null; then
+            log_info "Successfully checked out: $pr_branch"
+            return 0
+        fi
+    fi
+    
+    # Alternative: Create tracking branch from origin
+    log_info "Attempting to create tracking branch from origin/$pr_branch"
+    if git checkout -b "$pr_branch" "origin/$pr_branch" 2>/dev/null; then
+        log_info "Created and checked out tracking branch: $pr_branch"
+        return 0
+    fi
+    
+    # Last resort: Check if we're already on the right commit (CI often does this)
+    if [[ -n "$pr_branch_commit" && "$current_commit" == "$pr_branch_commit" ]]; then
+        log_warn "Could not checkout branch name, but already at correct commit"
+        log_info "Proceeding with current HEAD: $current_commit"
+        return 0
+    fi
+    
+    log_fatal "Failed to checkout or locate branch '$pr_branch'"
 }
 
 # ============================================================================
@@ -77,29 +265,71 @@ detect_and_checkout_branch() {
 compute_diff_range() {
     local base_branch="$1"
     local pr_branch="$2"
+    local context_type="$3"
     
-    # Fetch latest base branch to ensure accurate comparison
-    if ! git fetch origin "$base_branch" 2>/dev/null; then
+    # Validate base branch exists
+    if ! git rev-parse --verify "refs/heads/$base_branch" >/dev/null 2>&1 &&
+       ! git rev-parse --verify "origin/$base_branch" >/dev/null 2>&1; then
+        log_warn "Base branch '$base_branch' not found locally"
+        log_info "Attempting to fetch from origin..."
+        if ! git fetch origin "$base_branch:$base_branch" 2>/dev/null; then
+            log_error "Failed to fetch base branch '$base_branch'"
+            log_warn "Falling back to HEAD^ comparison"
+            local latest_commit
+            latest_commit=$(git rev-parse HEAD)
+            local prev_commit
+            prev_commit=$(git rev-parse "$latest_commit^" 2>/dev/null || echo "")
+            [[ -n "$prev_commit" ]] || log_fatal "Cannot determine previous commit"
+            echo "$prev_commit..$latest_commit|fallback"
+            return
+        fi
+    fi
+    
+    # Fetch latest base branch for accurate comparison
+    if git fetch origin "$base_branch" 2>/dev/null; then
+        log_info "Successfully fetched latest '$base_branch' from origin"
+    else
         log_warn "Could not fetch origin/$base_branch, using local ref"
     fi
     
     # Find merge-base (common ancestor)
     local merge_base
-    merge_base=$(git merge-base "origin/$base_branch" "$pr_branch" 2>/dev/null || \
-                 git merge-base "$base_branch" "$pr_branch" 2>/dev/null || \
-                 echo "")
+    local base_ref
+    
+    # Try origin first, then local
+    if git rev-parse --verify "origin/$base_branch" >/dev/null 2>&1; then
+        base_ref="origin/$base_branch"
+    else
+        base_ref="$base_branch"
+    fi
+    
+    merge_base=$(git merge-base "$base_ref" "$pr_branch" 2>/dev/null || echo "")
     
     if [[ -z "$merge_base" ]]; then
-        log_warn "Could not find merge-base, falling back to HEAD^ comparison"
+        log_warn "Could not find merge-base between '$base_ref' and '$pr_branch'"
+        
+        # Self-comparison detection (critical issue)
+        if [[ "$base_branch" == "$pr_branch" ]]; then
+            log_error "⚠️  BASE AND PR BRANCHES ARE IDENTICAL"
+            log_error "  This will produce an empty diff!"
+            log_error "  Please specify a different base branch with --base or BASE_BRANCH"
+            echo "SELF|error"
+            return
+        fi
+        
+        log_warn "Falling back to HEAD^ comparison"
         local latest_commit
         latest_commit=$(git rev-parse HEAD)
         local prev_commit
         prev_commit=$(git rev-parse "$latest_commit^" 2>/dev/null || echo "")
         [[ -n "$prev_commit" ]] || log_fatal "Cannot determine previous commit"
-        echo "$prev_commit..$latest_commit"
+        echo "$prev_commit..$latest_commit|fallback"
     else
-        log_info "Comparing against merge-base: $merge_base"
-        echo "$merge_base..HEAD"
+        local merge_base_short
+        merge_base_short=$(git rev-parse --short "$merge_base")
+        log_info "Found merge-base: $merge_base_short"
+        log_info "Comparing: $base_ref ($merge_base_short) -> $pr_branch (HEAD)"
+        echo "$merge_base..HEAD|merge-base"
     fi
 }
 
@@ -108,6 +338,13 @@ compute_diff_range() {
 # ============================================================================
 get_changed_files() {
     local diff_range="$1"
+    
+    # Handle self-comparison error
+    if [[ "$diff_range" == "SELF" ]]; then
+        echo ""
+        return
+    fi
+    
     local files
     files=$(git diff --name-only --diff-filter=ACM "$diff_range" 2>/dev/null || echo "")
     
@@ -119,14 +356,20 @@ get_changed_files() {
     
     # Filter by extension and size
     local filtered_files=""
+    local skipped_count=0
+    
     while IFS= read -r file; do
         # Check file exists
-        [[ -f "$file" ]] || continue
+        if [[ ! -f "$file" ]]; then
+            log_warn "File no longer exists: $file"
+            continue
+        fi
         
         # Check extension
         local ext="${file##*.}"
         if [[ ! " $SUPPORTED_EXTENSIONS " =~ " .$ext " ]]; then
             log_info "Skipping unsupported file type: $file"
+            ((skipped_count++))
             continue
         fi
         
@@ -134,12 +377,17 @@ get_changed_files() {
         local size_kb
         size_kb=$(du -k "$file" | cut -f1)
         if [[ "$size_kb" -gt "$MAX_FILE_SIZE_KB" ]]; then
-            log_warn "Skipping large file ($size_kb KB): $file"
+            log_warn "Skipping large file ($size_kb KB > $MAX_FILE_SIZE_KB KB): $file"
+            ((skipped_count++))
             continue
         fi
         
         filtered_files+="$file"$'\n'
     done <<< "$files"
+    
+    if [[ $skipped_count -gt 0 ]]; then
+        log_info "Skipped $skipped_count files due to size/type filters"
+    fi
     
     echo "$filtered_files"
 }
@@ -161,19 +409,26 @@ scan_for_secrets() {
         'sk_live_[0-9a-zA-Z]{24,}'
         'ghp_[0-9a-zA-Z]{36}'
         'PRIVATE\s+KEY'
+        'BEGIN\s+(RSA|DSA|EC|OPENSSH)\s+PRIVATE\s+KEY'
     )
     
     # Load custom patterns if provided
     if [[ -n "$SECRET_PATTERNS_FILE" && -f "$SECRET_PATTERNS_FILE" ]]; then
         mapfile -t custom_patterns < "$SECRET_PATTERNS_FILE"
         patterns+=("${custom_patterns[@]}")
+        log_info "Loaded ${#custom_patterns[@]} custom secret patterns"
     fi
+    
+    log_info "Scanning for secrets with ${#patterns[@]} patterns"
     
     while IFS= read -r file; do
         [[ -n "$file" ]] || continue
         for pattern in "${patterns[@]}"; do
-            if grep -inE "$pattern" "$file" 2>/dev/null; then
-                findings+="🔴 Potential secret in $file: matches pattern '$pattern'"$'\n'
+            local matches
+            matches=$(grep -inE "$pattern" "$file" 2>/dev/null || echo "")
+            if [[ -n "$matches" ]]; then
+                findings+="🔴 **$file** - Potential secret detected (pattern: \`${pattern:0:50}...\`)"$'\n'
+                findings+="   Lines: $(echo "$matches" | cut -d: -f1 | paste -sd,)"$'\n\n'
             fi
         done
     done <<< "$files"
@@ -199,7 +454,10 @@ aggregate_code() {
         # Escape backticks for markdown
         content="${content//\`/\\\`}"
         
-        aggregated+="\n\n### File: $file\n\`\`\`\n$content\n\`\`\`"
+        # Get file extension for syntax highlighting
+        local ext="${file##*.}"
+        
+        aggregated+="\n\n### File: $file\n\`\`\`$ext\n$content\n\`\`\`"
         ((file_count++))
     done <<< "$files"
     
@@ -233,7 +491,7 @@ You are a senior software engineer performing a rigorous, production-focused cod
     • Maintainability – Technical debt, duplication, unclear abstractions, upgrade risks
 
 🔐 Pre-scan Results:
-$secret_findings
+$( [[ -n "$secret_findings" ]] && echo "$secret_findings" || echo "✅ No potential secrets detected in automated scan" )
 
 📤 Output Structure (per file):
     • Summary: 1–2 sentences on the nature and overall quality of changes
@@ -263,109 +521,316 @@ run_llm_review() {
     fi
     
     # Run model with timeout
+    log_info "Invoking LLM (timeout: 300s)..."
     if ! response=$(timeout 300s docker model run "$MODEL" "$prompt" 2>&1); then
-        log_fatal "LLM execution failed or timed out"
+        local exit_code=$?
+        if [[ $exit_code -eq 124 ]]; then
+            log_fatal "LLM execution timed out after 300 seconds"
+        else
+            log_fatal "LLM execution failed with exit code $exit_code"
+        fi
     fi
     
+    log_info "LLM review completed successfully"
     echo "$response"
 }
 
 # ============================================================================
-# Write report
+# Generate dry-run report
+# ============================================================================
+generate_dry_run_report() {
+    local pr_branch="$1"
+    local context_type="$2"
+    
+    cat > "$REPORT_FILE" <<EOF
+# LLM Code Review - Dry Run Template
+
+**Mode:** Dry Run (no actual review performed)  
+**Current Branch:** \`$pr_branch\`  
+**Context Type:** \`$context_type\`  
+**Generated:** $(date -u +"%Y-%m-%d %H:%M:%S UTC")
+
+---
+
+## 🔍 Dry Run Information
+
+This is a template report generated in dry-run mode. No actual code review was performed.
+
+### To perform a real review:
+
+1. **In a PR context (GitHub Actions):**
+   \`\`\`yaml
+   - name: Run code review
+     run: ./review.sh
+   \`\`\`
+
+2. **With explicit branch:**
+   \`\`\`bash
+   ./review.sh feature/my-branch
+   \`\`\`
+
+3. **With custom base branch:**
+   \`\`\`bash
+   BASE_BRANCH=develop ./review.sh feature/my-branch
+   \`\`\`
+
+---
+
+## 📋 Current Configuration
+
+- **Base Branch:** \`$BASE_BRANCH\`
+- **Model:** \`$MODEL\`
+- **Output File:** \`$REPORT_FILE\`
+- **Max File Size:** ${MAX_FILE_SIZE_KB}KB
+- **Supported Extensions:** $SUPPORTED_EXTENSIONS
+
+---
+
+## ⚙️ Environment Status
+
+### Git Repository
+- **Current Branch:** \`$pr_branch\`
+- **Repository:** \`$(git config --get remote.origin.url 2>/dev/null || echo "unknown")\`
+- **Latest Commit:** \`$(git rev-parse --short HEAD)\`
+
+### CI Context
+- **GitHub Actions:** $( [[ -n "${GITHUB_HEAD_REF:-}" ]] && echo "✅ Detected" || echo "❌ Not detected" )
+- **GitLab CI:** $( [[ -n "${CI_MERGE_REQUEST_SOURCE_BRANCH_NAME:-}" ]] && echo "✅ Detected" || echo "❌ Not detected" )
+
+---
+
+## 🚀 Next Steps
+
+Remove the \`--dry-run\` flag or unset \`DRY_RUN=false\` to perform an actual review.
+
+\`\`\`bash
+# Perform actual review
+./review.sh feature/my-branch
+
+# Or in CI (auto-detects)
+./review.sh
+\`\`\`
+EOF
+    
+    log_info "Dry-run report written to: $REPORT_FILE"
+}
+
+# ============================================================================
+# Write full report
 # ============================================================================
 write_report() {
     local pr_branch="$1"
-    local diff_range="$2"
-    local files="$3"
-    local secret_findings="$4"
-    local llm_response="$5"
+    local context_type="$2"
+    local diff_range="$3"
+    local diff_method="$4"
+    local files="$5"
+    local secret_findings="$6"
+    local llm_response="$7"
+    
+    # Generate context warning if fallback mode
+    local context_warning=""
+    if [[ "$context_type" == "fallback" ]]; then
+        context_warning=$(cat <<EOF
+
+## ⚠️ Context Warning
+
+**No PR context detected.** This review was run on the current branch without explicit PR information.
+
+### Recommendations:
+- If this is a PR, run the script with the branch name: \`./review.sh $pr_branch\`
+- In CI/CD, ensure PR environment variables are available:
+  - GitHub Actions: \`GITHUB_HEAD_REF\`, \`GITHUB_BASE_REF\`
+  - GitLab CI: \`CI_MERGE_REQUEST_SOURCE_BRANCH_NAME\`, \`CI_MERGE_REQUEST_TARGET_BRANCH_NAME\`
+- Consider using \`--base\` flag to specify comparison branch explicitly
+
+EOF
+)
+    fi
+    
+    # Generate diff method info
+    local diff_info=""
+    case "$diff_method" in
+        merge-base)
+            diff_info="✅ Accurate merge-base comparison"
+            ;;
+        fallback)
+            diff_info="⚠️ Fallback mode (HEAD^..HEAD) - may miss changes"
+            ;;
+        error)
+            diff_info="❌ Self-comparison detected - empty diff"
+            ;;
+    esac
     
     cat > "$REPORT_FILE" <<EOF
 # LLM Code Review Summary
 
 **Branch:** \`$pr_branch\`  
+**Base Branch:** \`$BASE_BRANCH\`  
+**Context Type:** \`$context_type\`  
 **Diff Range:** \`$diff_range\`  
+**Diff Method:** $diff_info  
 **Generated:** $(date -u +"%Y-%m-%d %H:%M:%S UTC")
-
+$context_warning
 ---
 
 ## Files Reviewed
-\`\`\`
-$files
-\`\`\`
+
+$( [[ -n "$files" ]] && echo "\`\`\`" && echo "$files" | sed '/^$/d' && echo "\`\`\`" || echo "_No files to review_" )
 
 ---
 
-## Security Pre-Scan
+## 🔐 Security Pre-Scan
+
 $( [[ -n "$secret_findings" ]] && echo "$secret_findings" || echo "✅ No potential secrets detected" )
 
 ---
 
-## LLM Review
+## 🤖 LLM Review
+
 $llm_response
 
 ---
 
-**Review completed successfully**
+**Review completed successfully**  
+_Model: \`$MODEL\`_
 EOF
     
     log_info "Report written to: $REPORT_FILE"
 }
 
 # ============================================================================
+# Write empty report (no changes)
+# ============================================================================
+write_empty_report() {
+    local pr_branch="$1"
+    local context_type="$2"
+    local diff_range="$3"
+    local reason="$4"
+    
+    cat > "$REPORT_FILE" <<EOF
+# No Changes to Review
+
+**Branch:** \`$pr_branch\`  
+**Base Branch:** \`$BASE_BRANCH\`  
+**Context Type:** \`$context_type\`  
+**Diff Range:** \`$diff_range\`  
+**Generated:** $(date -u +"%Y-%m-%d %H:%M:%S UTC")
+
+---
+
+## Status
+
+$reason
+
+### Possible Causes:
+- No commits on the PR branch yet
+- All changes are to unsupported file types
+- Files exceed size limits (max: ${MAX_FILE_SIZE_KB}KB)
+- Base and PR branches are identical
+
+### Troubleshooting:
+1. Verify branch has commits: \`git log $pr_branch --oneline\`
+2. Check diff manually: \`git diff $BASE_BRANCH...$pr_branch\`
+3. Ensure supported file types: $SUPPORTED_EXTENSIONS
+4. Use \`--base\` flag if comparing against wrong branch
+
+---
+
+**No review performed**
+EOF
+    
+    log_info "Empty review report written to: $REPORT_FILE"
+}
+
+# ============================================================================
 # Main execution
 # ============================================================================
 main() {
-    log_info "Starting PR code review"
+    log_info "🚀 Starting LLM Code Review"
+    log_info "Configuration: base=$BASE_BRANCH, model=$MODEL, dry-run=$DRY_RUN"
     
-    # 1. Detect and checkout branch
-    local pr_branch
-    pr_branch=$(detect_and_checkout_branch "${1:-}")
+    # Parse arguments
+    local explicit_branch
+    explicit_branch=$(parse_args "$@")
     
-    # 2. Compute diff range
-    local diff_range
-    diff_range=$(compute_diff_range "$BASE_BRANCH" "$pr_branch")
-    log_info "Using diff range: $diff_range"
+    # Preflight checks
+    preflight_checks
     
-    # 3. Get changed files
+    # Dry-run mode
+    if [[ "$DRY_RUN" == "true" ]]; then
+        log_info "Running in DRY-RUN mode"
+        local context_info
+        context_info=$(detect_pr_context "$explicit_branch")
+        IFS='|' read -r pr_branch context_type <<< "$context_info"
+        generate_dry_run_report "$pr_branch" "$context_type"
+        log_info "✅ Dry-run completed"
+        exit 0
+    fi
+    
+    # 1. Detect PR context
+    local context_info
+    context_info=$(detect_pr_context "$explicit_branch")
+    IFS='|' read -r pr_branch context_type <<< "$context_info"
+    
+    # 2. Checkout branch
+    checkout_branch "$pr_branch" "$context_type"
+    
+    # 3. Compute diff range
+    local diff_info
+    diff_info=$(compute_diff_range "$BASE_BRANCH" "$pr_branch" "$context_type")
+    IFS='|' read -r diff_range diff_method <<< "$diff_info"
+    
+    # Handle self-comparison error
+    if [[ "$diff_method" == "error" ]]; then
+        write_empty_report "$pr_branch" "$context_type" "N/A" \
+            "❌ **Base and PR branches are identical** (\`$BASE_BRANCH\` == \`$pr_branch\`)  
+Cannot compute diff when comparing a branch to itself.  
+Please specify a different base branch using \`--base\` or \`BASE_BRANCH\` environment variable."
+        log_error "Cannot proceed: self-comparison detected"
+        exit 1
+    fi
+    
+    log_info "Using diff range: $diff_range ($diff_method)"
+    
+    # 4. Get changed files
     local files
     files=$(get_changed_files "$diff_range")
     
     if [[ -z "$files" ]]; then
-        log_warn "No reviewable files found in diff range"
-        echo "# No Changes to Review" > "$REPORT_FILE"
-        echo "**Branch:** \`$pr_branch\`" >> "$REPORT_FILE"
-        echo "" >> "$REPORT_FILE"
-        echo "No files were modified in the target diff range: \`$diff_range\`" >> "$REPORT_FILE"
-        log_info "Empty review report written to: $REPORT_FILE"
+        write_empty_report "$pr_branch" "$context_type" "$diff_range" \
+            "ℹ️ No reviewable files found in diff range: \`$diff_range\`"
+        log_warn "No files to review"
         exit 0
     fi
     
     log_info "Files to review:"
-    echo "$files" | while IFS= read -r f; do log_info "  - $f"; done
+    echo "$files" | while IFS= read -r f; do [[ -n "$f" ]] && log_info "  - $f"; done
     
-    # 4. Scan for secrets
+    # 5. Scan for secrets
+    log_info "Running security pre-scan..."
     local secret_findings
     secret_findings=$(scan_for_secrets "$files")
     if [[ -n "$secret_findings" ]]; then
-        log_error "Potential secrets detected!"
-        echo "$secret_findings"
+        log_error "🔴 Potential secrets detected!"
+        echo "$secret_findings" >&2
     fi
     
-    # 5. Aggregate code
+    # 6. Aggregate code
+    log_info "Aggregating code for LLM..."
     local aggregated_code
     aggregated_code=$(aggregate_code "$files")
     
-    # 6. Generate prompt
+    # 7. Generate prompt
     local prompt
     prompt=$(generate_prompt "$aggregated_code" "$secret_findings")
     
-    # 7. Run LLM review
+    # 8. Run LLM review
     local llm_response
     llm_response=$(run_llm_review "$prompt")
     
-    # 8. Write report
-    write_report "$pr_branch" "$diff_range" "$files" "$secret_findings" "$llm_response"
+    # 9. Write report
+    write_report "$pr_branch" "$context_type" "$diff_range" "$diff_method" \
+        "$files" "$secret_findings" "$llm_response"
     
     log_info "✅ Review completed successfully"
 }
