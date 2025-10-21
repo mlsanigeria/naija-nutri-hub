@@ -2,6 +2,7 @@
 try:
     from ultralytics import YOLO
 except:
+    import os
     os.system('pip uninstall ultralytics')
     os.system('pip install ultralytics')
     from ultralytics import YOLO
@@ -67,9 +68,9 @@ def classify_food_image(image) -> str:
     """
     Classifies a food image and returns the predicted food name.
     """
-    model_path=get_weights()
+    # model_path = get_weights()
 
-    classifier=load_model(model_path="./weights/best.pt")
+    classifier = load_model(model_path="./weights/best.pt")
 
     predicted_food = classifier.names[classifier(image)[0].probs.top1]
 
