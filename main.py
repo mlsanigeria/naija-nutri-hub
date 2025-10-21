@@ -53,7 +53,7 @@ from config.database import classification_requests, recipe_requests, nutrition_
 
 
 # Import the recipe generation function
-from src.recipegeneration.recipe_generation import get_recipe_for_dish
+from src.recipe_generation.recipe_generation import get_recipe_for_dish
 
 # Load environment variables
 load_dotenv()
@@ -373,7 +373,7 @@ async def food_classification(image: UploadFile = File(...), current_user: dict 
 ## Recipe Generation
 @app.post("/features/recipe_generation", tags=["Features"])
 
-async def recipe_generation(recipe_data: RecipePayload,current_user:dict = Depends(get_current_user)):
+async def recipe_generation(recipe_data: RecipePayload, current_user:dict = Depends(get_current_user)):
     """
     Accepts food name and other optional details, returns recipe suggestions
     """
@@ -392,20 +392,18 @@ async def recipe_generation(recipe_data: RecipePayload,current_user:dict = Depen
         raise HTTPException(status_code=500, detail=f"Recipe generation failed: {exc}")
     if not generated_recipe:
         raise HTTPException(status_code=404, detail="Unable to generate recipe for the requested dish.")
-    
-# Store request in DB
+        
+    # Store request in DB
     try:
         request_document = recipe_data.model_dump(exclude_none=True)
-        timestamp_value = datetime.now(timezone.utc)
-        request_document["timestamp"] = timestamp_value
-        request_document["user_email"] = current_user.get("email")
-        request_document["generated_recipe"] = generated_recipe
         result = recipe_requests.insert_one(request_document)
-        request_document.pop("_id", None)
     except Exception as exc:
         raise HTTPException(status_code=500, detail=f"Failed to store recipe request: {exc}")
-    
+    request_document.pop("_id", None)
 
+    request_document["timestamp"] = request_document["timestamp"]
+    request_document["user_email"] = current_user.get("email")
+    request_document["generated_recipe"] = generated_recipe
 
     return {
         "message": "Recipe request stored successfully.",
@@ -469,5 +467,6 @@ def purchase_locations(purchase_data: PurchasePayload):
 
 
     return
+
 
 
