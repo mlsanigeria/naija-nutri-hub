@@ -1,4 +1,4 @@
-name: LLM Code Review
+name: LLM Assist Code Review
 on:
   pull_request:
     types: [opened, synchronize]
