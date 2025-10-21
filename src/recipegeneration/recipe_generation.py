@@ -1,7 +1,7 @@
 # src/recipe-generation/recipe_generation.py
 
 import json
-from recipe_tools import generate_recipe
+from .recipe_tools import generate_recipe
 
 def get_recipe_for_dish(food_name: str):
     """
