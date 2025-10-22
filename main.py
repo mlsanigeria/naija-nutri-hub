@@ -49,7 +49,7 @@ from schemas.schema import (
 from config.database import otp_record, user_auth
 # Features DB
 
-from config.database import classification_requests, recipe_requests, nutrition_requests
+from config.database import classification_requests, recipe_requests, nutrition_requests , purchase_loc_requests
 
 
 # Import the recipe generation function
@@ -466,16 +466,43 @@ def nutritional_estimates(nutrition_data: NutritionPayload, current_user:dict = 
 
 ## Purchase Locations
 @app.post("/features/purchase_locations", tags=["Features"])
-def purchase_locations(purchase_data: PurchasePayload):
+def purchase_locations(purchase_data: PurchasePayload,current_user:dict=Depends(get_current_user)):
     """
     Accepts food name and location details, returns nearby purchase locations
     """
+    # 1. Validate Authentication
+    if not current_user:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    
+    if not purchase_data.food_name or not purchase_data.food_name.strip(): 
+        raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Food name is required and cannot be empty"
+            )
     # Main Implementation
 
     # Store request in DB
+    try:
+        user_email = current_user["email"]
+        current_timestamp = datetime.utcnow();
+        
+        purchase_record = {
+           "email": user_email.lower(),
+            "food_name": purchase_data.food_name.strip(),
+            "location_query": purchase_data.location_query.strip() if purchase_data.location_query else None,
+            "max_distance_km": purchase_data.max_distance_km,
+            "extra_inputs": purchase_data.extra_inputs if purchase_data.extra_inputs else None,
+            "timestamp": purchase_data.timestamp if purchase_data.timestamp else current_timestamp
+            
+            
+        }
+        result = purchase_loc_requests.insert_one(purchase_record)
+        return {"status":"successs", "inserted_id":str(result.inserted_id)}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to save request to database: {e}")
 
 
-    return
+   
 
 
 
