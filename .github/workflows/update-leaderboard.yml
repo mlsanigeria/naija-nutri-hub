@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - feature/nutrition-facts
   workflow_dispatch: {}  # Add workflow dispatch for manual triggering
   
 jobs:
