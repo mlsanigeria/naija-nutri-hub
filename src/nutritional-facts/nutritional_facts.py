@@ -82,7 +82,7 @@ def generate_structured_nutrition(food_name: str, grounded_data: dict, prompts: 
         return {"error": "Model response could not be parsed as JSON", "raw": message}
 
 
-# ========== Nutrition Facts Retrieval ==========
+#  Nutrition Facts Retrieval 
 def get_structured_nutrition(food_name: str) -> dict:
     """
     Retrieve grounded nutrition facts and enrich them using Azure OpenAI.
@@ -109,7 +109,7 @@ def get_structured_nutrition(food_name: str) -> dict:
     return structured_result
 
 
-# ========== CLI / Testing ==========
+#  Testing 
 if __name__ == "__main__":
     print("🔹 Azure OpenAI Nutrition Facts Generator")
     print("========================================\n")
@@ -120,5 +120,5 @@ if __name__ == "__main__":
 
     result = get_structured_nutrition(food)
 
-    print("\n🍽️ Structured Nutrition Facts:\n")
+    print("\n Structured Nutrition Facts:\n")
     print(json.dumps(result, indent=2))

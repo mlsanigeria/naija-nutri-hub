@@ -10,6 +10,7 @@ import os
 import requests
 import json
 from dotenv import load_dotenv
+import pandas as pd
 
 load_dotenv()
 
@@ -17,7 +18,8 @@ load_dotenv()
 SPOONACULAR_API_KEY = os.getenv("SPOONACULAR_API_KEY")
 
 
-# ========== 1. TheMealDB ==========
+
+#  1. TheMealDB 
 def get_nutrition_from_mealdb(food_name: str) -> dict:
     """
     Get basic meal information (ingredients, category, area) from TheMealDB.
@@ -54,7 +56,7 @@ def get_nutrition_from_mealdb(food_name: str) -> dict:
         return {"source": "TheMealDB", "error": str(e)}
 
 
-# ========== 2. Spoonacular ==========
+#  2. Spoonacular 
 def get_nutrition_from_spoonacular(food_name: str) -> dict:
     """
     Get detailed nutrition facts from Spoonacular.
@@ -100,13 +102,14 @@ def get_nutrition_from_spoonacular(food_name: str) -> dict:
 
     except Exception as e:
         return {"source": "Spoonacular", "error": str(e)}
+    
 
 
-# ========== 3. Combine Sources ==========
+#  3. Combine Sources 
 def combine_nutrition_sources(mealdb_data: dict, spoon_data: dict) -> dict:
     """
     Combine data from TheMealDB and Spoonacular.
-    Prioritize quantitative nutrition values from Spoonacular.
+    
     """
     combined = {}
     combined["food_name"] = (
@@ -130,7 +133,7 @@ def combine_nutrition_sources(mealdb_data: dict, spoon_data: dict) -> dict:
     return combined
 
 
-# ========== 4. Formatter ==========
+# 4. Formatter 
 def format_nutrition_output(food_name: str, data: dict) -> dict:
     """
     Final structured dictionary for LLM grounding.
@@ -149,7 +152,7 @@ def format_nutrition_output(food_name: str, data: dict) -> dict:
     }
 
 
-# ========== Test Run ==========
+#  Test Run 
 if __name__ == "__main__":
     food = "Jollof Rice"
     print(json.dumps(get_nutrition_from_mealdb(food), indent=2))
