@@ -1,7 +1,7 @@
 from bson import ObjectId
 from typing import Optional, List
 from datetime import datetime
-from typing import Optional, Any
+from typing import Optional, Any, Literal
 from enum import Enum
 from pydantic import BaseModel, EmailStr, Field, field_validator
 # from bson.binary import Binary
@@ -55,16 +55,16 @@ class ClassificationPayload(BaseModel):
 class RecipePayload(BaseModel):
     email: EmailStr
     food_name: str
-    servings: Optional[float] = None
-    dietary_restrictions: Optional[List[str]] = None
-    extra_inputs: Optional[dict] = None             # e.g. {"preferred_cuisine": "yoruba"}
+    servings: Optional[float] = None  # e.g. "3 plates/portions"
+    dietary_restriction: Optional[List[str]] = None # e.g ["Vegetarian", "Vegan", "Lactose intolerant", "Gluten-free", "Nut allergy", "Diabetic", "Halal"]
+    extra_inputs: Optional[str] = None             # e.g. Preferred Cuisine is "yoruba etc.
     timestamp: Optional[datetime] = Field(default_factory=datetime.utcnow)
 
 class NutritionPayload(BaseModel):
     email: EmailStr
     food_name: str
     portion_size: Optional[str] = None              # e.g. "1 cup", "200g"
-    extra_inputs: Optional[dict] = None
+    extra_inputs: Optional[str] = None             # e.g. Preferred Cuisine is "yoruba etc.
     timestamp: Optional[datetime] = Field(default_factory=datetime.utcnow)
 
 class PurchasePayload(BaseModel):
@@ -72,5 +72,4 @@ class PurchasePayload(BaseModel):
     food_name: str
     location_query: Optional[str] = None            # e.g. "Surulere, Lagos"
     max_distance_km: Optional[float] = None
-    extra_inputs: Optional[dict] = None
     timestamp: Optional[datetime] = Field(default_factory=datetime.utcnow)
