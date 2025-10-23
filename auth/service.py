@@ -21,6 +21,7 @@ def user_serializer(user: dict) -> dict:
         "lastname": user["lastname"],
         "username": user["username"],
         "email": user["email"],
+        "password_hash": user["password_hash"],
         "is_verified": user["is_verified"],
         "created_at": user["created_at"],
     }

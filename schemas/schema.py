@@ -1,10 +1,10 @@
 from bson import ObjectId
 from typing import Optional, List
 from datetime import datetime
-from typing import Optional, Any
+from typing import Optional, Any, Literal
 from enum import Enum
 from pydantic import BaseModel, EmailStr, Field, field_validator
-from bson.binary import Binary
+# from bson.binary import Binary
 
 
 class User(BaseModel):
@@ -46,30 +46,30 @@ class ResetPasswordRequest(BaseModel):
 # Endpoint-specific payloads
 
 # Sample structure for storing classification request in db
-# class ClassificationPayload(BaseModel):
-#     email: EmailStr
-#     image: Binary # Expecting image file in binary format
-#     timestamp: datetime = Field(default_factory=datetime.utcnow)
+class ClassificationPayload(BaseModel):
+    email: EmailStr
+    image: bytes
+    timestamp: datetime = Field(default_factory=datetime.utcnow)
 
 
 class RecipePayload(BaseModel):
     email: EmailStr
     food_name: str
-    servings: Optional[float] = None
-    dietary_restrictions: Optional[List[str]] = None
-    extra_inputs: Optional[dict] = None             # e.g. {"preferred_cuisine": "yoruba"}
-    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    servings: Optional[float] = None  # e.g. "3 plates/portions"
+    dietary_restriction: Optional[List[str]] = None # e.g ["Vegetarian", "Vegan", "Lactose intolerant", "Gluten-free", "Nut allergy", "Diabetic", "Halal"]
+    extra_inputs: Optional[str] = None             # e.g. Preferred Cuisine is "yoruba etc.
+    timestamp: Optional[datetime] = Field(default_factory=datetime.utcnow)
 
 class NutritionPayload(BaseModel):
     email: EmailStr
     food_name: str
     portion_size: Optional[str] = None              # e.g. "1 cup", "200g"
-    extra_inputs: Optional[dict] = None
-    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    extra_inputs: Optional[str] = None             # e.g. Preferred Cuisine is "yoruba etc.
+    timestamp: Optional[datetime] = Field(default_factory=datetime.utcnow)
 
 class PurchasePayload(BaseModel):
     email: EmailStr
     food_name: str
     location_query: Optional[str] = None            # e.g. "Surulere, Lagos"
     max_distance_km: Optional[float] = None
-    extra_inputs: Optional[dict] = None
+    timestamp: Optional[datetime] = Field(default_factory=datetime.utcnow)

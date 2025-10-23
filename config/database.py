@@ -9,9 +9,18 @@ load_dotenv()
 
 # Connect to MongoDB
 client = MongoClient(os.getenv("MONGODB_CONNECTION_STRING"), tz_aware=True, tzinfo=timezone.utc)
-db = client.auth
-user_auth = db["user-auth"]     # <-- your users collection
-otp_record = db["otp-data"]     # <-- OTP collection (optional)
+
+# Auth DB
+auth_db = client.auth
+user_auth = auth_db["user-auth"]     # <-- Authentication collection
+otp_record = auth_db["otp-data"]     # <-- OTP collection
+
+# Feature DB
+feature_db = client.features
+classification_requests = feature_db["classification_requests"]
+recipe_requests = feature_db["recipe_requests"]
+nutrition_requests = feature_db["nutrition_requests"]
+purchase_loc_requests = feature_db["purchase_loc_requests"]
 
 # Example test user
 from bson import ObjectId

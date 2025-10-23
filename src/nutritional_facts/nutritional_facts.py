@@ -16,7 +16,7 @@ import os
 from dotenv import load_dotenv
 from openai import AzureOpenAI
 import pathlib
-from typing import Optional
+from typing import Optional, Dict, Any
 
 from nutrition_tools import (
     get_nutrition_from_mealdb,
@@ -27,6 +27,7 @@ from nutrition_tools import (
 
 
 # Environment Setup
+
 
 load_dotenv()
 
@@ -57,13 +58,15 @@ def load_prompts(path: Optional[str] = None) -> dict:
 
 
 
-# Azure OpenAI Call
+# Azure OpenAI Enrichment
+
 
 def generate_structured_nutrition(
     food_name: str,
     grounded_data: dict,
     prompts: dict,
     servings: int = 1,
+    extra_inputs: Optional[Dict[str, Any]] = None,
 ) -> dict:
     """
     Generate structured nutrition output from Azure model.
@@ -73,15 +76,21 @@ def generate_structured_nutrition(
     instruction = base_prompt.get("grounding_prompt", "")
     output_format = base_prompt.get("format_prompt", {})
 
+    extra_context = ""
+    if extra_inputs:
+        extra_context = f"\nAdditional context provided by user: {json.dumps(extra_inputs, indent=2)}"
+
     user_prompt = (
         f"{instruction}\n\n"
         f"Food item: {food_name}\n"
         f"Number of servings: {servings}\n"
-        f"Serving size (g): {grounded_data.get('serving_size_g', 100)}\n\n"
-        f"Grounded nutrition data:\n{json.dumps(grounded_data, indent=2)}\n\n"
-        f"Enrich only missing or null values (e.g., calories, fat, origin, tags) using reasoning. "
-        f"Do NOT rescale numbers, they are already per serving.\n"
-        f"Ensure the JSON matches this format:\n{json.dumps(output_format, indent=2)}"
+        f"Serving size (g): {grounded_data.get('serving_size_g', 100)}\n"
+        f"{extra_context}\n\n"
+        f"Grounded nutrition data (from verified sources):\n{json.dumps(grounded_data, indent=2)}\n\n"
+        f"🔹 Task: Enrich only missing or null values (e.g., calories, fat, origin, tags) using reasoning.\n"
+        f"Do NOT rescale or change the serving size — values are already per serving.\n"
+        f"Replace 'Lactose intolerant' with 'Lactose tolerant' if it describes tolerance levels.\n"
+        f"Ensure the JSON matches exactly this structure:\n{json.dumps(output_format, indent=2)}"
     )
 
     try:
@@ -106,7 +115,12 @@ def generate_structured_nutrition(
 
 # Nutrition Facts Retrieval
 
-def get_structured_nutrition(food_name: str, servings: int = 1) -> dict:
+
+def get_structured_nutrition(
+    food_name: str,
+    servings: int = 1,
+    extra_inputs: Optional[Dict[str, Any]] = None,
+) -> dict:
     """
     Retrieve grounded nutrition facts and enrich them using Azure OpenAI.
     Returns structured JSON output aligned with schema expectations.
@@ -119,32 +133,41 @@ def get_structured_nutrition(food_name: str, servings: int = 1) -> dict:
     mealdb_data = get_nutrition_from_mealdb(food_name)
     spoon_data = get_nutrition_from_spoonacular(food_name)
 
-    # 3. Combine grounded sources
-    grounded_data = combine_nutrition_sources(mealdb_data, spoon_data, serving_size_g=100 * servings)
+    # 3. Combine grounded sources (fix: no hardcoded serving_size_g)
+    grounded_data = combine_nutrition_sources(
+        mealdb_data, spoon_data, serving_size_g=mealdb_data.get("serving_size_g", 100)
+    )
 
     # 4. Format base structure
     formatted_grounded = format_nutrition_output(food_name, grounded_data)
 
     # 5. Enrich with Azure model
-    structured_result = generate_structured_nutrition(food_name, formatted_grounded, prompts, servings)
+    structured_result = generate_structured_nutrition(
+        food_name, formatted_grounded, prompts, servings, extra_inputs
+    )
 
     return structured_result
 
 
 
-#  Testing
+# Testing Entry Point
+
 
 if __name__ == "__main__":
-    print("🔹 Azure OpenAI Nutrition Facts Generator")
+    print(" Azure OpenAI Nutrition Facts Generator")
     print("========================================\n")
 
     food = input("Enter a meal name: ").strip()
     servings_input = input("Enter number of portions (default 1): ").strip()
     servings = int(servings_input) if servings_input.isdigit() else 1
 
+    extra_input_text = input("Add extra context (e.g., Yoruba-style, spicy) or press Enter to skip: ").strip()
+    extra_inputs = {"context": extra_input_text} if extra_input_text else None
+
     print("\nFetching grounded nutrition data and generating structured output...\n")
 
-    result = get_structured_nutrition(food, servings)
+    result = get_structured_nutrition(food, servings, extra_inputs)
 
     print("\n Structured Nutrition Facts:\n")
     print(json.dumps(result, indent=2))
+

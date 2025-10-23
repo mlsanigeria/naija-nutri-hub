@@ -5,15 +5,17 @@ from dotenv import load_dotenv
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 
-import jwt
-from jose import JWTError
-from fastapi import FastAPI, Depends, status
+from jose import jwt, JWTError
+from fastapi import FastAPI, Depends, status, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.exceptions import HTTPException
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from bson import ObjectId
 from auth.service import resend_otp_service
 from auth.mail import send_email_otp, send_email_welcome
+from pydantic import BaseModel, EmailStr as PydanticEmailStr, ValidationError
+from pymongo import MongoClient
+from bson.binary import Binary
 
 # Authentication
 from auth.mail import send_email_otp
@@ -37,7 +39,21 @@ from schemas.schema import (
     ResetPasswordRequest,
     UserCreate,
 )
+from schemas.schema import (
+    ClassificationPayload,
+    RecipePayload,
+    NutritionPayload,
+    PurchasePayload,
+)
+# Auth DB
 from config.database import otp_record, user_auth
+# Features DB
+
+from config.database import classification_requests, recipe_requests, nutrition_requests, purchase_loc_requests
+
+
+# Import the recipe generation function
+from src.recipe_generation.recipe_generation import get_recipe_for_dish
 
 # Load environment variables
 load_dotenv()
@@ -242,12 +258,21 @@ def login_user(form_data: OAuth2PasswordRequestForm = Depends()):
     if not user:
         user = get_user_via_email(form_data.username)
 
+    # Check password
     if not user or not verify_password(form_data.password, user["password_hash"]):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect username or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
+    
+    # Check if user is verified
+    if not user.get("is_verified", False):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Account not verified. Please verify your account before logging in.",
+        )
+
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
         data={"sub": user["username"]}, expires_delta=access_token_expires
@@ -311,6 +336,173 @@ def reset_password(req: ResetPasswordRequest):
     otp_record.delete_one({"email": req.email})
     return {"message": "Password reset successfully"}
 
+
+# Feature Enpoints
+
+## Food Classification
+@app.post("/features/food_classification", tags=["Features"])
+async def food_classification(image: UploadFile = File(...), current_user: dict = Depends(get_current_user)):
+    """
+    Accepts file upload (image) and returns classification result among other details.
+    """
+    try:
+        img_bytes = await image.read()
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Failed to read uploaded image: {e}")
+
+    if not img_bytes:
+        raise HTTPException(status_code=400, detail="Empty image file")
+
+    user_email = current_user.get("email")
+    if not user_email:
+        raise HTTPException(status_code=400, detail="Authenticated user has no email")
+
+    try:
+        payload = ClassificationPayload(email=user_email, image=img_bytes)
+    except ValidationError as ve:
+        raise HTTPException(status_code=400, detail=str(ve))
+
+    # Main Implementation (with function calls)
+    
+
+    # Store request in DB
+    try:
+        doc = {
+            "email": str(payload.email),
+            "image": Binary(payload.image),
+            "timestamp": payload.timestamp
+        }
+
+        result = classification_requests.insert_one(doc)
+        return {"status": "success", "inserted_id": str(result.inserted_id)}
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to save request to database: {e}")
+
+## Recipe Generation
+@app.post("/features/recipe_generation", tags=["Features"])
+
+async def recipe_generation(recipe_data: RecipePayload, current_user:dict = Depends(get_current_user)):
+    """
+    Accepts food name and other optional details, returns recipe suggestions
+    """
+    # Validate authentication
+    if not current_user:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    if not recipe_data.food_name or not recipe_data.food_name.strip():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Food name is required and cannot be empty"
+        )
+     # Main Implementation (with function calls)
+    try:
+        generated_recipe = get_recipe_for_dish(recipe_data.food_name.strip())
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Recipe generation failed: {exc}")
+    if not generated_recipe:
+        raise HTTPException(status_code=404, detail="Unable to generate recipe for the requested dish.")
+        
+    # Store request in DB
+    try:
+        request_document = recipe_data.model_dump(exclude_none=True)
+        result = recipe_requests.insert_one(request_document)
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Failed to store recipe request: {exc}")
+    request_document.pop("_id", None)
+
+    request_document["timestamp"] = request_document["timestamp"]
+    request_document["user_email"] = current_user.get("email")
+    request_document["generated_recipe"] = generated_recipe
+
+    return {
+        "message": "Recipe request stored successfully.",
+        "food_name: recipe_data.food_name.strip(),"
+        "generated_recipe": generated_recipe,
+        "request_metadata": {
+            "timestamp": request_document["timestamp"].isoformat() if "timestamp" in request_document else None,
+            "user_email": request_document.get("user_email"),
+            "request_id": str(result.inserted_id),
+        },
+        
+    }
+
+## Nutritional Values Generation
+@app.post("/features/nutritional_estimates", tags=["Features"])
+def nutritional_estimates(nutrition_data: NutritionPayload, current_user:dict = Depends(get_current_user)):
+    """
+    Accepts food name and other optional details, returns nutritional estimates
+    """
+    
+    if not current_user:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
+    if not nutrition_data.food_name or not nutrition_data.food_name.strip():
+        raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Food name is required and cannot be empty"
+            )
+        
+    # Main Implementation (with function calls)
+
+    
+    # Store request in DB
+    try:
+        user_email = current_user["email"]
+        current_timestamp = datetime.utcnow()
+        nutrition_record = {
+            "email": user_email,
+            "food_name": nutrition_data.food_name.strip(),
+            "portion_size": nutrition_data.portion_size.strip() if nutrition_data.portion_size else None,
+            "extra_inputs": nutrition_data.extra_inputs if nutrition_data.extra_inputs else None,
+            "timestamp": nutrition_data.timestamp if nutrition_data.timestamp else current_timestamp,
+            "created_at": current_timestamp
+         }
+        result = nutrition_requests.insert_one(nutrition_record)
+        return {"status":"successs", "inserted_id":str(result.inserted_id)}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to save request to database: {e}")
+        
+            
+
+## Purchase Locations
+@app.post("/features/purchase_locations", tags=["Features"])
+def purchase_locations(purchase_data: PurchasePayload, current_user:dict=Depends(get_current_user)):
+    """
+    Accepts food name and location details, returns nearby purchase locations
+    """
+    # Validate Authentication
+    if not current_user:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    
+    if not purchase_data.food_name or not purchase_data.food_name.strip(): 
+        raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Food name is required and cannot be empty"
+            )
+    # Main Implementation
+
+    # Store request in DB
+    try:
+        user_email = current_user["email"]
+        current_timestamp = datetime.utcnow();
+        
+        purchase_record = {
+           "email": user_email,
+            "food_name": purchase_data.food_name.strip(),
+            "location_query": purchase_data.location_query.strip() if purchase_data.location_query else None,
+            "max_distance_km": purchase_data.max_distance_km if purchase_data.max_distance_km else None,
+            "extra_inputs": purchase_data.extra_inputs if purchase_data.extra_inputs else None,
+            "timestamp": purchase_data.timestamp if purchase_data.timestamp else current_timestamp
+            
+            
+        }
+        result = purchase_loc_requests.insert_one(purchase_record)
+        return {"status":"successs", "inserted_id":str(result.inserted_id)}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to save request to database: {e}")
+
+
+   
 
 
 
