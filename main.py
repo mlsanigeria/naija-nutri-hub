@@ -49,7 +49,7 @@ from schemas.schema import (
 from config.database import otp_record, user_auth
 # Features DB
 
-from config.database import classification_requests, recipe_requests, nutrition_requests , purchase_loc_requests
+from config.database import classification_requests, recipe_requests, nutrition_requests, purchase_loc_requests
 
 
 # Import the recipe generation function
@@ -450,7 +450,7 @@ def nutritional_estimates(nutrition_data: NutritionPayload, current_user:dict = 
         user_email = current_user["email"]
         current_timestamp = datetime.utcnow()
         nutrition_record = {
-            "email": user_email.lower(),
+            "email": user_email,
             "food_name": nutrition_data.food_name.strip(),
             "portion_size": nutrition_data.portion_size.strip() if nutrition_data.portion_size else None,
             "extra_inputs": nutrition_data.extra_inputs if nutrition_data.extra_inputs else None,
@@ -466,11 +466,11 @@ def nutritional_estimates(nutrition_data: NutritionPayload, current_user:dict = 
 
 ## Purchase Locations
 @app.post("/features/purchase_locations", tags=["Features"])
-def purchase_locations(purchase_data: PurchasePayload,current_user:dict=Depends(get_current_user)):
+def purchase_locations(purchase_data: PurchasePayload, current_user:dict=Depends(get_current_user)):
     """
     Accepts food name and location details, returns nearby purchase locations
     """
-    # 1. Validate Authentication
+    # Validate Authentication
     if not current_user:
         raise HTTPException(status_code=401, detail="Unauthorized")
     
@@ -487,10 +487,10 @@ def purchase_locations(purchase_data: PurchasePayload,current_user:dict=Depends(
         current_timestamp = datetime.utcnow();
         
         purchase_record = {
-           "email": user_email.lower(),
+           "email": user_email,
             "food_name": purchase_data.food_name.strip(),
             "location_query": purchase_data.location_query.strip() if purchase_data.location_query else None,
-            "max_distance_km": purchase_data.max_distance_km,
+            "max_distance_km": purchase_data.max_distance_km if purchase_data.max_distance_km else None,
             "extra_inputs": purchase_data.extra_inputs if purchase_data.extra_inputs else None,
             "timestamp": purchase_data.timestamp if purchase_data.timestamp else current_timestamp
             
@@ -503,6 +503,7 @@ def purchase_locations(purchase_data: PurchasePayload,current_user:dict=Depends(
 
 
    
+
 
 
 
