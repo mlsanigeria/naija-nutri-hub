@@ -1,40 +1,51 @@
 # nutrition_prompts.yml
 # ---------------------
-# Prompts used by the Nutrition Facts module.
-# Guides the LLM to generate structured and grounded nutritional information.
+# Centralized prompt templates for the Nutrition Facts module.
+# The LLM must use retrieved evidence (datasets + external APIs) to generate structured, grounded outputs.
 
 nutrition_prompt:
   grounding_prompt: |
-    You are a certified nutrition analysis expert.
-    Given a food name, grounded data (from reliable datasets), serving size, and optional cultural context,
-    generate a structured JSON summary containing macronutrients, micronutrients, and dietary metadata.
+    You are a certified nutrition data analyst.
+    Your task is to generate **structured nutritional information** for a given food item,
+    using ONLY the evidence provided from datasets and external sources.
 
-    - Include full nutrition facts per serving, not per 100g, unless no serving size is specified.
-    - Include realistic and culturally grounded "origin" values (e.g., "Yoruba", "Igbo", "Ghanaian", "Nigerian", not just countries).
-    - Ensure numeric values remain per given serving — DO NOT multiply or rescale unless specifically stated.
-    - Replace "Lactose intolerant" with "Lactose tolerant" since this describes safe consumption levels.
-    - Include “main_ingredient” and “category” fields for clarity.
+    The evidence will include:
+      - Retrieved dataset records (ingredients, region, category, etc.)
+      - API data from MealDB or Spoonacular (if available)
+      - Any inferred or aggregated information (e.g., main ingredients, dish type)
 
-    Approved dietary tags (select one or more if applicable):
-    ["Vegetarian", "Vegan", "Lactose tolerant", "Gluten-free", "Nut allergy", "Diabetic", "Halal"]
+    Follow these rules:
+      - DO NOT invent or assume any values.
+      - DO NOT use fixed or default origins, areas, or dietary tags.
+      - If evidence is insufficient, return null or leave the field blank, with `"confidence": "low"`.
+      - Serving size should be in number of servings or plates, **not in grams**, unless explicitly given in dataset or API.
+      - “Origin” should reflect culturally grounded data (e.g., "Yoruba", "Igbo", "Ghanaian"), not generalized countries.
+      - Dietary tags must come ONLY from evidence — never use defaults.
+      - Always cite whether a value comes from the dataset, MealDB, or Spoonacular.
+      - Your output must be **valid JSON only** (no explanations outside JSON).
 
-    Your response must be in valid JSON and follow the format below.
-    Do not include any explanatory text outside of the JSON.
+    You will receive these placeholders:
+      - {{food_name}}
+      - {{serving_description}}
+      - {{retrieved_dataset_context}}
+      - {{api_context}}
+      - {{inferred_context}}
 
   format_prompt: |
-    Format your output strictly as JSON with the following structure:
+    Format your output strictly as JSON in this structure:
+
     {
-      "food_name": "<food_name>",
-      "portion_size": "<e.g., 1 cup (140g)>",
+      "food_name": "{{food_name}}",
+      "portion_size": "{{serving_description}}",
       "nutrition_facts": {
-        "calories": <float>, 
-        "protein_g": <float>, 
-        "fat_g": <float>, 
-        "carbohydrates_g": <float>,
-        "fiber_g": <float, optional>,
-        "sugar_g": <float, optional>,
-        "cholesterol_mg": <float, optional>,
-        "sodium_mg": <float, optional>
+        "calories": <float or null>,
+        "protein_g": <float or null>,
+        "fat_g": <float or null>,
+        "carbohydrates_g": <float or null>,
+        "fiber_g": <float or null>,
+        "sugar_g": <float or null>,
+        "cholesterol_mg": <float or null>,
+        "sodium_mg": <float or null>
       },
       "sources": {
         "dataset": <true|false>,
@@ -42,32 +53,52 @@ nutrition_prompt:
         "spoonacular": <true|false>
       },
       "metadata": {
-        "category": "<e.g., Main Course, Snack, Soup, Dessert>",
-        "area": "<e.g., Nigerian, American, Ghanaian>",
-        "origin": "<region or tribe of origin, e.g., Yoruba, Igbo, Hausa>",
-        "main_ingredient": "<primary ingredient or base of the dish>",
-        "dietary_tags": ["<one or more from the approved list>"]
+        "category": "<Main Course, Snack, Soup, etc. or null>",
+        "area": "<broader cultural area, e.g., Nigerian, Ghanaian, American>",
+        "origin": "<specific region or tribe, e.g., Yoruba, Igbo, Hausa, or null>",
+        "main_ingredient": "<primary ingredient or null>",
+        "dietary_tags": [
+          {
+            "tag": "<one of ['Vegetarian','Vegan','Lactose tolerant','Gluten-free','Nut allergy','Diabetic','Halal']>",
+            "confidence": "<low|medium|high>",
+            "evidence": "<short explanation>"
+          }
+        ],
+        "inference_confidence": "<low|medium|high>"
       }
     }
 
   validation_prompt: |
-    Ensure the output passes these checks before returning:
-    - JSON must be valid and parseable (no markdown or text outside JSON).
-    - Units are standardized: grams for macros, milligrams for sodium/cholesterol.
-    - Calories ≈ 4 kcal/g for protein or carbohydrates, 9 kcal/g for fat.
-    - All numeric values are realistic and non-negative.
-    - Do NOT rescale serving values — keep as provided.
-    - Origin and area reflect realistic cultural/geographic roots (e.g., Yoruba, Edo, Hausa, Nigerian).
-    - Dietary tags come only from this approved list:
-      ["Vegetarian", "Vegan", "Lactose tolerant", "Gluten-free", "Nut allergy", "Diabetic", "Halal"]
+    Before returning, ensure:
+      - JSON is valid and parseable (no markdown or commentary).
+      - All values come from provided evidence (dataset, MealDB, or Spoonacular).
+      - No assumed or fabricated values.
+      - Units are consistent (grams for macros, mg for sodium/cholesterol).
+      - Portion size uses "servings" or "plates", not fixed grams unless sourced.
+      - Cultural origin is realistic (Yoruba, Igbo, Edo, etc.).
+      - Dietary tags only from the approved list.
+      - Missing or uncertain values include `"confidence": "low"`.
+      - Return null where evidence is missing.
 
   examples:
-    - description: "Example 1 — Nigerian dish (Yoruba origin)"
-      food_name: "Efo Riro"
+    - description: "Example — Nigerian dish grounded in dataset evidence"
+      inputs:
+        food_name: "Efo Riro"
+        serving_description: "2 plates"
+        retrieved_dataset_context: |
+          Dataset match:
+            - Name: Efo Riro
+            - Ingredients: spinach, palm oil, assorted meat, pepper mix
+            - Region: Yoruba
+            - Category: Main Course
+        api_context: |
+          MealDB match found: Yoruba spinach stew with palm oil base
+        inferred_context: |
+          All sources indicate it is a Nigerian (Yoruba) dish; primarily vegetable-based with moderate fat.
       response: |
         {
           "food_name": "Efo Riro",
-          "portion_size": "1 bowl (approx. 200g)",
+          "portion_size": "2 plates",
           "nutrition_facts": {
             "calories": 250.0,
             "protein_g": 12.0,
@@ -85,66 +116,15 @@ nutrition_prompt:
             "category": "Main Course",
             "area": "Nigerian",
             "origin": "Yoruba",
-            "main_ingredient": "Spinach and palm oil sauce",
-            "dietary_tags": ["Halal", "Lactose tolerant"]
+            "main_ingredient": "Spinach and palm oil",
+            "dietary_tags": [
+              {"tag": "Halal", "confidence": "high", "evidence": "Contains no pork or alcohol ingredients"},
+              {"tag": "Lactose tolerant", "confidence": "medium", "evidence": "No dairy ingredients found"}
+            ],
+            "inference_confidence": "high"
           }
         }
 
-    - description: "Example 2 — Nigerian dish (Igbo origin)"
-      food_name: "Oha Soup"
-      response: |
-        {
-          "food_name": "Oha Soup",
-          "portion_size": "1 bowl (approx. 250g)",
-          "nutrition_facts": {
-            "calories": 320.0,
-            "protein_g": 20.0,
-            "fat_g": 15.0,
-            "carbohydrates_g": 18.0,
-            "fiber_g": 4.0,
-            "sodium_mg": 720.0
-          },
-          "sources": {
-            "dataset": true,
-            "mealdb": true,
-            "spoonacular": false
-          },
-          "metadata": {
-            "category": "Main Course",
-            "area": "Nigerian",
-            "origin": "Igbo",
-            "main_ingredient": "Cocoyam and oha leaves",
-            "dietary_tags": ["Halal", "Lactose tolerant"]
-          }
-        }
-
-    - description: "Example 3 — Western dish"
-      food_name: "Pancakes"
-      response: |
-        {
-          "food_name": "Pancakes",
-          "portion_size": "1 serving (approx. 140g)",
-          "nutrition_facts": {
-            "calories": 338.0,
-            "protein_g": 9.0,
-            "fat_g": 13.5,
-            "carbohydrates_g": 42.0,
-            "sugar_g": 9.7,
-            "sodium_mg": 510.0
-          },
-          "sources": {
-            "dataset": false,
-            "mealdb": true,
-            "spoonacular": true
-          },
-          "metadata": {
-            "category": "Breakfast",
-            "area": "American",
-            "origin": "United States",
-            "main_ingredient": "Flour and milk batter",
-            "dietary_tags": ["Vegetarian"]
-          }
-        }
 
 
 
