@@ -248,15 +248,15 @@ def resend_otp(email: str):
 
 
 @app.post("/login", tags=["Authentication"])
-def login_user(form_data: OAuth2PasswordRequestForm = Depends()):
+def login_user(form_data: LoginRequest = Depends()):
     """
     Logs in a user and returns a JWT access token.
     FastAPI's form dependency expects 'username' and 'password' fields.
     """
     # Check if user exists (can be username or email)
-    user = get_user_via_username(form_data.username)
+    user = get_user_via_username(form_data.username_email)
     if not user:
-        user = get_user_via_email(form_data.username)
+        user = get_user_via_email(form_data.username_email)
 
     # Check password
     if not user or not verify_password(form_data.password, user["password_hash"]):
