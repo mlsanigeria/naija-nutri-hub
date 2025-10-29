@@ -20,6 +20,7 @@ api_key = os.getenv("AZURE_OPENAI_API_KEY")
 base_url = os.getenv("AZURE_OPENAI_BASE_URL")
 deployment_name = os.getenv("AZURE_OPENAI_DEPLOYMENT_NAME")
 api_version = os.getenv("AZURE_OPENAI_API_VERSION")
+dalle_deployment_name = os.getenv("AZURE_OPENAI_DALL_E_DEPLOYMENT_NAME")
 
 if not all([api_key, base_url, deployment_name, api_version]):
     raise ValueError(
@@ -146,7 +147,40 @@ def search_tavily(food_name: str):
     except Exception:
         return []
 
+# ========================================
+# Helper 4: Azure OpenAI DALL-E 3 Image Generation
+# ========================================
 
+def generate_step_image(step_description: str, food_name: str) -> str | None:
+    """
+    Generates an image using Azure OpenAI DALL-E 3 and returns the image URL.
+    """
+    image_prompt = (
+        f"A clear, high-quality, top-down photograph of a cooking step. "
+        f"The focus is on '{step_description}' for a recipe of '{food_name}'. "
+        f"Use a simple, clean kitchen background. The image must not contain any text, logos, or brand names."
+    )
+    
+    try:
+        print(f"🖼️ Generating image for step: '{step_description[:50]}...'")
+        result = client.images.generate(
+            model=dalle_deployment_name, # Use the DALL-E 3 deployment name
+            prompt=image_prompt,
+            n=1,
+            size="1024x1024", 
+            style="vivid" 
+        )
+        
+        if result.data and result.data[0].url:
+            print("✅ Image URL generated successfully.")
+            return result.data[0].url
+        else:
+            print("⚠️ Image generation succeeded but no URL was found in the response.")
+            return None
+            
+    except Exception as e:
+        print(f"❌ Error generating image for step '{step_description[:50]}...': {e}")
+        return None
 
 # ========================================
 # Main Recipe Generation Function
@@ -205,10 +239,26 @@ def generate_recipe(food_name: str):
 
         recipe_json = json.loads(response.choices[0].message.content)
         recipe_json["source"] = "combined (local + TheMealDB + Tavily)"
+        
+        # === NEW LOGIC: Generate Images for Each Recipe Step ===
+        if "steps" in recipe_json and isinstance(recipe_json["steps"], list):
+            print("\n📸 Starting image generation for recipe steps...")
+            recipe_food_name = recipe_json.get("title", food_name)
+            
+            for i, step in enumerate(recipe_json["steps"]):
+                if "instruction" in step:
+                    step_description = step["instruction"]
+                    image_url = generate_step_image(step_description, recipe_food_name)
+                    
+                    # Add the image URL reference to the structured output
+                    step["image_url"] = image_url # None -> if no url
+                else:
+                    step["image_url"] = None
+            
+            print("✅ Completed image processing for all steps.")
+        
         return recipe_json
 
     except Exception as e:
         print(f"❌ Error generating recipe: {e}")
         return None
-
-
