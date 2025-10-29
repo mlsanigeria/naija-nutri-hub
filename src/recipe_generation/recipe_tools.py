@@ -251,9 +251,9 @@ def generate_recipe(food_name: str):
                     image_url = generate_step_image(step_description, recipe_food_name)
                     
                     # Add the image URL reference to the structured output
-                    step["image_url"] = image_url if image_url else "Image generation failed"
+                    step["image_url"] = image_url # None -> if no url
                 else:
-                    step["image_url"] = "No instruction found for this step"
+                    step["image_url"] = None
             
             print("✅ Completed image processing for all steps.")
         
