@@ -227,7 +227,16 @@ def generate_recipe(food_name: str):
     #user_prompt = f"Food name: {food_name}\n\nGrounded data:\n{json.dumps(combined_context, indent=2)}"
 
     try:
-        response = client.chat.completions.create(...)
+        response = client.chat.completions.create(
+            model=deployment_name,  # use your Azure deployment name
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt},
+            ],
+            temperature=0.6,
+            response_format={"type": "json_object"},
+        )
+
         recipe_json = json.loads(response.choices[0].message.content)
         recipe_json["source"] = "combined (local + TheMealDB + Tavily)"
         
@@ -253,5 +262,3 @@ def generate_recipe(food_name: str):
     except Exception as e:
         print(f"❌ Error generating recipe: {e}")
         return None
-
-
