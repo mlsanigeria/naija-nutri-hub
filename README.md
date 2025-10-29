@@ -6,31 +6,68 @@ Welcome to the Hacktoberfest Open Source Challenge 3.0 organized by the Microsof
 
 This year the Hacktoberfest ML/AI Open-Source Challenge focuses on **one flagship project — Naija Nutri Hub**.
 
-**Naija Nutri Hub** is an end-to-end, AI-powered food platform focused on **Nigerian food**. The goal is a practical, production-ready tool that combines computer vision, nutrition knowledge, recipe generation, and local discovery into a single experience. Participants can contribute across ML/AI engineering, [frontend](https://github.com/mlsanigeria/naija-nutri-hub-frontend), backend (with FastAPI), [UI/UX design](https://github.com/mlsanigeria/naija-nutri-hub-frontend), DevOps, and non-technical roles (docs, community, testing).
+**Naija Nutri Hub** is an **end-to-end, AI-powered food platform** focused on **Nigerian cuisine**.  
+Its goal is to create a **production-ready tool** that combines:
+
+- 🍽️ Computer vision for food recognition  
+- 🧮 Nutrition knowledge & calorie analysis  
+- 📜 Recipe generation  
+- 📍 Local restaurant discovery  
+
+Participants can contribute across:
+- 🤖 ML/AI Engineering  
+- 💻 Backend (FastAPI) & [Frontend](https://github.com/mlsanigeria/naija-nutri-hub-frontend)  
+- 🎨 [UI/UX Design](https://github.com/mlsanigeria/naija-nutri-hub-frontend)  
+- ⚙️ DevOps  
+- 📄 Non-technical roles (Documentation, Testing, Community, etc.)
+
 
 ### Project overview
 Naija Nutri Hub allows a user to take or upload a photo of a meal and receive:
-- **Food classification** — Identify the dish (single or multiple items in an image).  
-- **Nutritional & calorie estimates** — Grounded nutrition facts pulled or reconciled from external APIs/databases.  
-- **Recipe suggestions** — Step-by-step cooking recipes (and ingredient/portion guidance) generated or retrieved for the identified dish.  
-- **Nearby restaurants** — Recommend local restaurants that sell the same or similar dishes.
+- **Food Classification** — Identify dishes (single or multiple) in an image  
+- **Nutritional & Calorie Estimates** — Fetch accurate nutrition data from external APIs  
+- **Recipe Suggestions** — Generate step-by-step recipes with ingredient and portion guidance  
+- **Nearby Restaurants** — Recommend local restaurants serving similar dishes  
+
 
 ## **How to Participate**
 
-1. **Register for Hacktoberfest**: Head over to the [Hacktoberfest website](https://hacktoberfest.com/) to register. Your contributions to this repository will count towards your Hacktoberfest progress.
+### **1. Register for Hacktoberfest**
+Visit the [Hacktoberfest website](https://hacktoberfest.com/) to register.  
+Your contributions to this repository will count toward your Hacktoberfest progress.
 
-2. **Fork the Repository**: Start by forking the repository to your GitHub account.
 
-3. **Contribute to the Naija Nutri Hub Project**: This repository is dedicated to developing the ML/AI Engineering side of the Naija Nutri Hub Project. Make your contributions by fixing bugs, adding new features, improving documentation, or addressing issues. Check out our [Contribution Guidelines](CONTRIBUTING.md).
+### **2. Fork the Repository**
+Fork this repository to your GitHub account.
 
-4. **Submit a Pull Request**: Share your contributions by submitting pull requests. Please follow our contribution guidelines outlined in the project's README.
 
-### **Still Confused About How to Get Started? 🤔**
-Watch the recording of our info session on how to participate in this challenge on [YouTube](https://youtu.be/pC_5E3AcrZc).
+### **3. Contribute to Naija Nutri Hub**
+This repository focuses on **ML/AI Engineering** and **Backend Development** for Naija Nutri Hub.  
+You can contribute by:
+
+- Fixing bugs 🐞  
+- Adding new features ⚙️  
+- Improving documentation 📝  
+- Addressing open issues 💡  
+
+Refer to the [Contribution Guidelines](CONTRIBUTING.md) before starting.
+
+
+### **4. Submit a Pull Request**
+After committing your changes, open a Pull Request and link it to the issue you’re solving.  
+Be sure to follow the project’s PR format.
+
+---
+
+## **Still Confused About How to Get Started? 🤔**
+Watch the recording of our info session on YouTube 🎥  
+👉 [Hacktoberfest Challenge 3.0 Session](https://youtu.be/pC_5E3AcrZc)
+
+---
 
 ## **🏆 Leaderboard**
 
-We maintain a leaderboard to track your contributions and their impact on our projects. The more you contribute, the higher you'll climb on the leaderboard.
+We maintain a leaderboard to recognize your contributions and their impact on our projects. The more you contribute, the higher you'll climb on the leaderboard.
 
 <!-- Section Start -->
 ### Top 10 Contributors
@@ -58,7 +95,9 @@ Check out the full leaderboard [here](LEADERBOARD.md).
 
 ## **🥇 Prizes**
 
-We have exciting prizes for our top contributors, including LinkedIn Premium vouchers and more. Your contributions could earn you valuable rewards and recognition within the community.
+Exciting prizes await our top contributors 🎁  
+Including **LinkedIn Premium vouchers** and more!  
+Your efforts can earn you recognition and rewards within our community. 🌟
 
 ## **💬 Get in Touch**
 
@@ -69,8 +108,12 @@ If you have questions, need assistance, or want to discuss the projects, feel fr
 
 ## **📣 Help Us Spread the Word**
 
-Help us make this initiative a success by sharing it with your network! Use the hashtag #Hacktoberfest to spread the word and encourage others to join.
+Share your journey on social media with **#Hacktoberfest** and inspire others to join!  
+Together, let’s code, collaborate, and celebrate open source! 💫
 
 ## **Happy Hacking! 🎉**
 
-Thank you for being part of the Hacktoberfest Open Source Challenge. Your contributions make a difference, and together, we can create amazing open-source solutions. Let's code, collaborate, and celebrate open source! 🚀
+Thank you for being part of the **Hacktoberfest Open Source Challenge.**  
+Your contributions truly make a difference and together, we can create amazing open-source solutions. 
+
+Let's code, collaborate, and celebrate open source! 🚀
