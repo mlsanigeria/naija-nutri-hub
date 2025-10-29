@@ -11,7 +11,7 @@ nutrition_prompt:
 
     Rules:
       - Do NOT assume defaults for origin, area, or dietary tags.
-      - If the dataset context contains a Region or Area field, use that as the "origin" or "area" in metadata.
+      - Determine "origin" and "area" from the available evidence (dataset or API), prioritizing explicit mentions where possible.
       - If evidence contains serving size/gram info, you may use it; otherwise portion_size must be textual (e.g., "1 serving", "2 plates").
       - If no evidence exists for a numeric value, infer based on known values for similar foods or set to null if impossible.
       - Set "inference_confidence" to:
@@ -46,10 +46,10 @@ nutrition_prompt:
         "spoonacular": <true|false>
       },
       "metadata": {
-        "category": "<string|null>",
-        "area": "<string|null>",
-        "origin": "<string|null>",
-        "main_ingredient": "<string|null>",
+        "category": "<e.g., Main Course, Dessert, Soup, Snack>",
+        "area": "<e.g., Nigerian, American, Chinese, Indian>",
+        "origin": "<e.g., Yoruba, Hausa, Igbo, Northern Nigeria, Western Africa>",
+        "main_ingredient": "<e.g., Rice, Vegetables, Yam, Fish>",
         "dietary_tags": [
           {
             "tag": "<one of approved tags>",
@@ -68,6 +68,7 @@ nutrition_prompt:
       - Portion_size uses servings/plates text unless dataset/API provided grams.
       - Values must be grounded in the evidence blocks; if no evidence, infer based on typical local foods.
       - Dietary tags limited to approved list and must include an evidence string.
+
 
 
 
