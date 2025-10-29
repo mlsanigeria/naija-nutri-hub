@@ -1,6 +1,11 @@
-# Contributing to the Hacktoberfest Repository
+# 🧩 Contributing to Naija Nutri Hub
 
-Welcome to the **Naija Nutri Hub** project repository for ML/AI Engineering and Backend, organized by the Microsoft Learn Student Ambassadors and GitHub Campus Experts, Unilag for Hacktoberfest 2025! We're excited to have you contribute and improve this innovative project.
+Welcome to the **Naija Nutri Hub** project repository for ML/AI Engineering and Backend, organized by the **Microsoft Learn Student Ambassadors (MLSA)** and **GitHub Campus Experts, Unilag** for **Hacktoberfest 2025!**
+
+We’re excited to have you contribute and help improve this innovative, AI-powered food platform.  
+Whether you’re fixing bugs, improving documentation, or adding features — every contribution matters. 🙌  
+
+
 
 ## How to Install Dependencies and Work on the Project Locally
 
@@ -112,27 +117,21 @@ naija-nutri-hub/
 └── naija-nutri-hub/         # Virtual environment (auto-generated)
 ```
 
-### Folder Descriptions & Example Contributions
+### 📁 Folder Descriptions & Example Contributions
 
-- **`auth/`** - Handles user authentication, OTP verification, and email services  
-  *Example: Add SMS OTP option alongside email verification*
 
-- **`config/`** - Database connections and application configuration  
-  *Example: Add Redis caching configuration for better performance*
+| Folder | Description | Example Contribution |
+|--------|--------------|----------------------|
+| **auth/** | Handles authentication, OTP verification, and email services | Add SMS OTP support |
+| **config/** | Database connections and app configuration | Add Redis caching for performance |
+| **schemas/** | Pydantic models for request/response validation | Add schema for user dietary preferences |
+| **src/** | Core AI/ML modules for food analysis and recommendations | Improve food classification accuracy |
+| **experimentation/** | Jupyter notebooks for ML experiments | Create ingredient substitution notebook |
+| **tests/** | Unit & integration tests | Add API integration test cases |
 
-- **`schemas/`** - Pydantic models for API request/response validation  
-  *Example: Create new schema for user dietary preferences*
+---
 
-- **`src/`** - Core AI/ML modules for food analysis and recommendations  
-  *Example: Improve food classification accuracy or add new cuisine types*
-
-- **`experimentation/`** - Research notebooks for testing new ML approaches  
-  *Example: Create notebook exploring ingredient substitution algorithms*
-
-- **`tests/`** - Automated tests ensuring code quality and functionality  
-  *Example: Add integration tests for the recipe generation API*
-
-### Quick Start for Contributors
+### ⚙️ Quick Start for Contributors
 
 **3-Step Contribution Flow:**
 1. **Claim** - Comment on an issue to get it assigned to you
@@ -145,42 +144,89 @@ naija-nutri-hub/
 uvicorn main:app --reload
 ```
 
-**PR Checklist:**
-- [ ] Code follows project style and includes docstrings
-- [ ] Tests added/updated and all tests pass
-- [ ] Clear commit messages and PR description provided
+### **PR Checklist**
 
-## How You Can Contribute:
+- [ ] Code follows project style and includes docstrings  
+- [ ] Tests added/updated and all tests pass  
+- [ ] Clear and descriptive commit messages  
+- [ ] Issue number referenced (`Closes #<issue-number>`)  
 
-1. Review the existing project code and issues to understand the functionality.
-2. Find an open issue that matches your skills or propose a new feature.
-3. Work on your contribution, test it thoroughly, and make sure it aligns with the project goals.
-4. Submit your pull request with a clear explanation of your contribution.
+## 🧩 How You Can Contribute
 
-## ✔️ General Contribution Guidelines
+- Review the existing project code and open issues.  
+- Pick an issue or propose a new improvement.  
+- Work on your contribution, test it locally, and ensure it aligns with project goals.  
+- Submit your PR with a detailed description and supporting screenshots if needed.  
 
-- Follow best practices for coding, including writing clean and well-documented code.
-- Provide meaningful commit messages and detailed pull request descriptions.
-- Respectfully collaborate and communicate with other contributors.
-- Feel free to ask questions or seek guidance from project maintainers if needed.
 
-**Happy hacking! We can't wait to see your amazing contributions!**
+## 🧰 Troubleshooting
+
+| Problem | Solution |
+|----------|-----------|
+| `uvloop` install error (Windows) | Remove `uvloop` from `requirements.txt` |
+| `bson` import error | Run `pip uninstall bson` → `pip install pymongo --upgrade` |
+| Email not sending | Double-check your `.env` Mailtrap credentials |
+| MongoDB not connecting | Ensure MongoDB service (`mongod`) is running locally |
+
+## 🧾 General Contribution Guidelines
+
+- Write clean, modular, and documented code.  
+- Keep commit messages meaningful and concise.  
+- Follow the repository’s code style and structure.  
+- Respect other contributors and collaborate politely.  
+- Ask questions freely — maintainers are happy to help! 
+
+
+## 📦 Resources
+
+- [How to Do Your First Pull Request](https://youtu.be/nkuYH40cjo4?si=Cb6U2EKVR_Ns4RLw)  
+- [Fundamentals of Azure OpenAI Service](https://learn.microsoft.com/en-us/training/modules/explore-azure-openai/)  
+- [Azure OpenAI Python SDK Setup](https://learn.microsoft.com/en-us/azure/ai-foundry/openai/supported-languages)  
+- [Azure OpenAI Models: Deployment](https://learn.microsoft.com/azure/ai-services/openai/how-to/working-with-models)  
+- [Develop Generative AI Solutions with Azure OpenAI Service](https://learn.microsoft.com/en-us/training/paths/develop-ai-solutions-azure-openai/)  
+- [Azure Custom Vision Documentation](https://learn.microsoft.com/en-us/azure/ai-services/custom-vision-service/quickstarts/image-classification)  
+- [Azure Custom Vision Video Tutorial](https://www.youtube.com/watch?v=PSHZJC1VvvI)  
+- [FastAPI Docs](https://fastapi.tiangolo.com/tutorial/)
 
 ---
 
-## 🔗 Links to Resources
+## 📊 Datasets & APIs
 
-1. [How to Do Your First Pull Request](https://youtu.be/nkuYH40cjo4?si=Cb6U2EKVR_Ns4RLw)
-2. [Fundamentals of Azure OpenAI Service](https://learn.microsoft.com/en-us/training/modules/explore-azure-openai/?wt.mc_id=studentamb_217190)
-3. [Azure OpenAI Python SDK Setup](https://learn.microsoft.com/en-us/azure/ai-foundry/openai/supported-languages?tabs=dotnet-secure%2Csecure%2Cpython-key%2Ccommand&pivots=programming-language-python?wt.mc_id=studentamb_217190)
-4. [Azure OpenAI Models: Deployment](https://learn.microsoft.com/azure/ai-services/openai/how-to/working-with-models?tabs=powershell?wt.mc_id=studentamb_217190)
-5. [Develop Generative AI solutions with Azure OpenAI Service](https://learn.microsoft.com/en-us/training/paths/develop-ai-solutions-azure-openai/?wt.mc_id=studentamb_217190)
-6. [Azure Custom Vision Documentation](https://learn.microsoft.com/en-us/azure/ai-services/custom-vision-service/quickstarts/image-classification?tabs=windows%2Cvisual-studio&pivots=programming-language-python).
-7. [Azure Custom Vision Video Tutorial](https://www.youtube.com/watch?v=PSHZJC1VvvI)
-8. [FastAPI Docs](https://fastapi.tiangolo.com/tutorial/)
+- [Nigerian Food Dataset - Images (Kaggle)](https://www.kaggle.com/datasets/elinteerie/nigeria-food-ai-dataset/data)  
+- [Nigerian Food Description Dataset (Kaggle)](https://www.kaggle.com/datasets/franklycypher/nigerian-foods)  
+- [The MealDB](https://www.themealdb.com/) — API for recipes and ingredients  
+- [Spoonacular API](https://spoonacular.com/food-api) — API for recipes, ingredients & nutrition info  
 
-## 📊 Datasets/APIs
-1. [Nigerian Food Dataset - Images (Kaggle)](https://www.kaggle.com/datasets/elinteerie/nigeria-food-ai-dataset/data)
-2. [Nigerian Food Description Dataset (Kaggle)](https://www.kaggle.com/datasets/franklycypher/nigerian-foods)
-3. [The MealDB](https://www.themealdb.com/) - provides API access to recipes and ingredients that could power the recipe feature of the solution.
-4. [Spoonacular API](https://spoonacular.com/food-api) - a food and recipe API that provides access to a vast database of recipes, ingredients, and nutritional information. It can be used to retrieve structured and accurate data to support the recipe generation, and nutritional facts features of this project.
+---
+
+## 💬 Community & Support
+
+Need help? We’ve got you covered!  
+
+- 💬 [Join our WhatsApp Community](WHATSAPP_COMMUNITIES.md)  
+- 🐦 Follow [@mlsanigeria](https://twitter.com/mlsanigeria) on Twitter  
+
+---
+
+
+
+## 🤝 Code of Conduct
+
+By contributing, you agree to follow our [Code of Conduct](CODE_OF_CONDUCT.md).  
+We’re committed to an inclusive, welcoming community for everyone. 🌍  
+
+---
+
+## 🎉 Final Words
+
+Thank you for contributing to **Naija Nutri Hub!**  
+Your efforts help make open source more accessible and inspiring.  
+
+**Happy hacking! We can't wait to see your amazing contributions!**
+
+**✨ Together, let’s build something meaningful — one PR at a time! 🚀**
+
+
+
+---
+
