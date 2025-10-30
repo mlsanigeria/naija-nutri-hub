@@ -50,6 +50,7 @@ def generate_structured_nutrition(food_name: str, grounded_data: dict, prompts: 
     placeholders = {
         "food_name": food_name,
         "serving_description": grounded_data.get("portion_size") or f"{servings} serving{'s' if servings > 1 else ''}",
+        "servings": str(int(servings)),
         "retrieved_dataset_context": grounded_data.get("retrieved_dataset_context") or "",
         "api_context": grounded_data.get("api_context") or "",
         "inferred_context": grounded_data.get("inferred_context") or "",
@@ -67,11 +68,49 @@ def generate_structured_nutrition(food_name: str, grounded_data: dict, prompts: 
         response = client.chat.completions.create(
             model=AZURE_DEPLOYMENT_NAME,
             messages=[
-                {"role": "system", "content": "You are a nutrition analyst that must return valid JSON only."},
+                {"role": "system", "content": "You are a nutrition analyst that must strictly follow the JSON schema."},
                 {"role": "user", "content": user_prompt},
-            ],
-            response_format={"type": "json_object"},
-        )
+        ],
+        response_format={
+            "type": "json_schema",
+            "json_schema": {
+                "name": "nutrition_schema",
+                "schema": {
+                    "type": "object",
+                    "properties": {
+                        "food_name": {"type": "string"},
+                        "servings": {"type": "integer"},
+                        "portion_size": {"type": "string"},
+                        "nutrition_facts": {
+                            "type": "object",
+                            "properties": {
+                                "calories": {"type": ["number", "null"]},
+                                "protein_g": {"type": ["number", "null"]},
+                                "fat_g": {"type": ["number", "null"]},
+                                "carbohydrates_g": {"type": ["number", "null"]},
+                                "fiber_g": {"type": ["number", "null"]},
+                                "sugar_g": {"type": ["number", "null"]},
+                                "cholesterol_mg": {"type": ["number", "null"]},
+                                "sodium_mg": {"type": ["number", "null"]}
+                            },
+                            "required": ["calories", "protein_g", "fat_g", "carbohydrates_g"]
+                        },
+                        "sources": {
+                            "type": "object",
+                            "properties": {
+                                "dataset": {"type": "boolean"},
+                                "mealdb": {"type": "boolean"},
+                                "spoonacular": {"type": "boolean"}
+                            }
+                        },
+                        "metadata": {"type": "object"}
+                    },
+                    "required": ["food_name","servings", "nutrition_facts", "sources"]
+                }
+            }
+        },
+    )
+
 
         message = response.choices[0].message.content
         return json.loads(message)

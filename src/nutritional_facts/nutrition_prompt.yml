@@ -1,51 +1,45 @@
-# nutrition_prompts.yml
-# ---------------------
-# Centralized prompt templates for the Nutrition Facts module.
-# The LLM must use retrieved evidence (datasets + external APIs) to generate structured, grounded outputs.
-
 nutrition_prompt:
   grounding_prompt: |
-    You are a certified nutrition data analyst.
-    Your task is to generate **structured nutritional information** for a given food item,
-    using ONLY the evidence provided from datasets and external sources.
+    You are a certified nutrition data analyst. Use the evidence supplied below to produce a structured JSON output for a single food item. 
+    If numeric nutrition values (e.g., calories, protein) are missing from the evidence, infer realistic estimates using your nutrition expertise, 
+    grounded in the provided dataset description, ingredients, and region. Do not fabricate irrelevant fields.
 
-    The evidence will include:
-      - Retrieved dataset records (ingredients, region, category, etc.)
-      - API data from MealDB or Spoonacular (if available)
-      - Any inferred or aggregated information (e.g., main ingredients, dish type)
+    Evidence sections:
+      - retrieved_dataset_context: dataset row(s) found (raw fields).
+      - api_context: data returned from TheMealDB and Spoonacular (if any).
+      - inferred_context: metadata about which sources exist and any retrieval confidence (already computed by the application).
 
-    Follow these rules:
-      - DO NOT invent or assume any values.
-      - DO NOT use fixed or default origins, areas, or dietary tags.
-      - If evidence is insufficient, return null or leave the field blank, with `"confidence": "low"`.
-      - Serving size should be in number of servings or plates, **not in grams**, unless explicitly given in dataset or API.
-      - “Origin” should reflect culturally grounded data (e.g., "Yoruba", "Igbo", "Ghanaian"), not generalized countries.
-      - Dietary tags must come ONLY from evidence — never use defaults.
-      - Always cite whether a value comes from the dataset, MealDB, or Spoonacular.
-      - Your output must be **valid JSON only** (no explanations outside JSON).
+    Rules:
+      - Do NOT assume defaults for origin, area, or dietary tags.
+      - Determine "origin" and "area" from available evidence (dataset or API), prioritizing explicit mentions where possible.
+      - If evidence contains serving size/gram info, you may use it; otherwise portion_size must be textual (e.g., "1 serving", "2 plates").
+      - If no evidence exists for a numeric value, infer based on known values for similar foods or set to null if impossible.
+      - Do not include "inference_confidence" in the output.
+      - Dietary tags must be selected only from the allowed list:
+        ["Vegetarian","Vegan","Lactose tolerant","Gluten-free","Nut allergy","Diabetic","Halal"].
+      - You may infer dietary tags using your nutrition and culinary expertise if the ingredients or typical preparation are well known for that dish (e.g., "Efo Riro" is typically vegetarian when made without meat).
+      - Do not output any tag outside the approved list (e.g., "Non-Vegetarian" or "Kosher").
+      - Output only the list of applicable tags (no confidence or evidence).
+      - If still truly uncertain, output an empty array [].
+      - Output must be valid JSON only (no prose outside JSON).
 
-    You will receive these placeholders:
-      - {{food_name}}
-      - {{serving_description}}
-      - {{retrieved_dataset_context}}
-      - {{api_context}}
-      - {{inferred_context}}
 
   format_prompt: |
-    Format your output strictly as JSON in this structure:
+    Output strictly the following JSON structure (replace placeholders with provided evidence/results):
 
     {
       "food_name": "{{food_name}}",
+      "servings": <integer>,
       "portion_size": "{{serving_description}}",
       "nutrition_facts": {
-        "calories": <float or null>,
-        "protein_g": <float or null>,
-        "fat_g": <float or null>,
-        "carbohydrates_g": <float or null>,
-        "fiber_g": <float or null>,
-        "sugar_g": <float or null>,
-        "cholesterol_mg": <float or null>,
-        "sodium_mg": <float or null>
+        "calories": <float|null>,
+        "protein_g": <float|null>,
+        "fat_g": <float|null>,
+        "carbohydrates_g": <float|null>,
+        "fiber_g": <float|null>,
+        "sugar_g": <float|null>,
+        "cholesterol_mg": <float|null>,
+        "sodium_mg": <float|null>
       },
       "sources": {
         "dataset": <true|false>,
@@ -53,77 +47,24 @@ nutrition_prompt:
         "spoonacular": <true|false>
       },
       "metadata": {
-        "category": "<Main Course, Snack, Soup, etc. or null>",
-        "area": "<broader cultural area, e.g., Nigerian, Ghanaian, American>",
-        "origin": "<specific region or tribe, e.g., Yoruba, Igbo, Hausa, or null>",
-        "main_ingredient": "<primary ingredient or null>",
-        "dietary_tags": [
-          {
-            "tag": "<one of ['Vegetarian','Vegan','Lactose tolerant','Gluten-free','Nut allergy','Diabetic','Halal']>",
-            "confidence": "<low|medium|high>",
-            "evidence": "<short explanation>"
-          }
-        ],
-        "inference_confidence": "<low|medium|high>"
+        "category": "<e.g., Main Course, Dessert, Soup, Snack>",
+        "area": "<e.g., Nigerian, American, Chinese, Indian>",
+        "origin": "<e.g., Yoruba, Hausa, Igbo, Northern Nigeria, Western Africa>",
+        "main_ingredient": "<e.g., Rice, Vegetables, Yam, Fish>",
+        "dietary_tags": [<list of applicable dietary_tags from any of the approved tags>]
       }
     }
 
   validation_prompt: |
-    Before returning, ensure:
-      - JSON is valid and parseable (no markdown or commentary).
-      - All values come from provided evidence (dataset, MealDB, or Spoonacular).
-      - No assumed or fabricated values.
-      - Units are consistent (grams for macros, mg for sodium/cholesterol).
-      - Portion size uses "servings" or "plates", not fixed grams unless sourced.
-      - Cultural origin is realistic (Yoruba, Igbo, Edo, etc.).
-      - Dietary tags only from the approved list.
-      - Missing or uncertain values include `"confidence": "low"`.
-      - Return null where evidence is missing.
+    Final checks:
+      - JSON parseable only.
+      - Numeric macros expressed in grams; sodium/cholesterol in mg; calories in kcal.
+      - Portion_size uses servings/plates text unless dataset/API provided grams.
+      - Values must be grounded in the evidence blocks; if no evidence, infer based on typical local foods.
+      - Dietary tags limited to the approved list only.
 
-  examples:
-    - description: "Example — Nigerian dish grounded in dataset evidence"
-      inputs:
-        food_name: "Efo Riro"
-        serving_description: "2 plates"
-        retrieved_dataset_context: |
-          Dataset match:
-            - Name: Efo Riro
-            - Ingredients: spinach, palm oil, assorted meat, pepper mix
-            - Region: Yoruba
-            - Category: Main Course
-        api_context: |
-          MealDB match found: Yoruba spinach stew with palm oil base
-        inferred_context: |
-          All sources indicate it is a Nigerian (Yoruba) dish; primarily vegetable-based with moderate fat.
-      response: |
-        {
-          "food_name": "Efo Riro",
-          "portion_size": "2 plates",
-          "nutrition_facts": {
-            "calories": 250.0,
-            "protein_g": 12.0,
-            "fat_g": 18.0,
-            "carbohydrates_g": 10.0,
-            "fiber_g": 3.0,
-            "sodium_mg": 560.0
-          },
-          "sources": {
-            "dataset": true,
-            "mealdb": true,
-            "spoonacular": false
-          },
-          "metadata": {
-            "category": "Main Course",
-            "area": "Nigerian",
-            "origin": "Yoruba",
-            "main_ingredient": "Spinach and palm oil",
-            "dietary_tags": [
-              {"tag": "Halal", "confidence": "high", "evidence": "Contains no pork or alcohol ingredients"},
-              {"tag": "Lactose tolerant", "confidence": "medium", "evidence": "No dairy ingredients found"}
-            ],
-            "inference_confidence": "high"
-          }
-        }
+
+
 
 
 
