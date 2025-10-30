@@ -3,18 +3,21 @@ recipe_generation_prompt: |
 
   You MUST base your response primarily on the information from the **"Provided Recipe Data Context"** below. However, you can use your expertise to infer plausible values for fields like 'region' or 'spice_level' if they are not available in the context.
 
+  **User Preferences and Constraints:**
+  {user_preferences}
+
   **Provided Recipe Data Context:**
   ---
   {context_data}
   ---
 
-  Based on the context above, create a single, valid JSON object with the following structure. Do not include any text, greetings, or explanations before or after the JSON object.
+  Based on the context above and respecting the user preferences, create a single, valid JSON object with the following structure. Do not include any text, greetings, or explanations before or after the JSON object.
   {{
     "food_name": "Name of the dish",
     "description": "A brief, savory description of the dish. You can generate this based on the title and ingredients.",
     "region": "The Nigerian region or tribe the dish is most associated with (e.g., Yoruba).",
     "spice_level": "Mild, Medium, or Spicy (infer from ingredients like 'pepper').",
-    "servings": "e.g., 4",
+    "servings": "Number of servings based on user preference or default",
     "prep_time_minutes": "e.g., 15",
     "cook_time_minutes": "e.g., 45",
     "total_time_minutes": "e.g., 60",
