@@ -11,17 +11,18 @@ nutrition_prompt:
 
     Rules:
       - Do NOT assume defaults for origin, area, or dietary tags.
-      - Determine "origin" and "area" from the available evidence (dataset or API), prioritizing explicit mentions where possible.
+      - Determine "origin" and "area" from available evidence (dataset or API), prioritizing explicit mentions where possible.
       - If evidence contains serving size/gram info, you may use it; otherwise portion_size must be textual (e.g., "1 serving", "2 plates").
       - If no evidence exists for a numeric value, infer based on known values for similar foods or set to null if impossible.
-      - Set "inference_confidence" to:
-        - "high" if multiple sources (dataset + API) align.
-        - "medium" if inferred from dataset alone.
-        - "low" if based on minimal or missing context.
-      - Dietary tags must be grounded in evidence (ingredients or API metadata). Use allowed tags only:
+      - Do not include "inference_confidence" in the output.
+      - Dietary tags must be selected only from the allowed list:
         ["Vegetarian","Vegan","Lactose tolerant","Gluten-free","Nut allergy","Diabetic","Halal"].
-      - If no dietary tags are found, output an empty array [].
+      - You may infer dietary tags using your nutrition and culinary expertise if the ingredients or typical preparation are well known for that dish (e.g., "Efo Riro" is typically vegetarian when made without meat).
+      - Do not output any tag outside the approved list (e.g., "Non-Vegetarian" or "Kosher").
+      - Output only the list of applicable tags (no confidence or evidence).
+      - If still truly uncertain, output an empty array [].
       - Output must be valid JSON only (no prose outside JSON).
+
 
   format_prompt: |
     Output strictly the following JSON structure (replace placeholders with provided evidence/results):
@@ -50,14 +51,7 @@ nutrition_prompt:
         "area": "<e.g., Nigerian, American, Chinese, Indian>",
         "origin": "<e.g., Yoruba, Hausa, Igbo, Northern Nigeria, Western Africa>",
         "main_ingredient": "<e.g., Rice, Vegetables, Yam, Fish>",
-        "dietary_tags": [
-          {
-            "tag": "<one of approved tags>",
-            "confidence": "<low|medium|high>",
-            "evidence": "<short grounding explanation>"
-          }
-        ],
-        "inference_confidence": "<low|medium|high>"
+        "dietary_tags": [<list of applicable dietary_tags from any of the approved tags>]
       }
     }
 
@@ -67,7 +61,8 @@ nutrition_prompt:
       - Numeric macros expressed in grams; sodium/cholesterol in mg; calories in kcal.
       - Portion_size uses servings/plates text unless dataset/API provided grams.
       - Values must be grounded in the evidence blocks; if no evidence, infer based on typical local foods.
-      - Dietary tags limited to approved list and must include an evidence string.
+      - Dietary tags limited to the approved list only.
+
 
 
 
