@@ -314,37 +314,20 @@ async def get_user_history(current_user: dict = Depends(get_current_user)):
         for collection, feature_name in feature_collections:
             user_requests_cursor = collection.find({"email": user_email})
             for record in user_requests_cursor:
-                request_input = {}
-                if feature_name == "food_classification":
-                    #  The full image data is not returned in the history API for performance/size reasons.
-                    request_input = {"image_uploaded": True}
-                elif feature_name == "recipe_generation":
-                    request_input = {
-                        "food_name": record.get("food_name"),
-                        "servings": record.get("servings"),
-                        "dietary_restriction": record.get("dietary_restriction"),
-                    }
-                elif feature_name == "nutritional_estimates":
-                    request_input = {
-                        "food_name": record.get("food_name"),
-                        "portion_size": record.get("portion_size"),
-                    }
-                elif feature_name == "purchase_locations":
-                    request_input = {
-                        "food_name": record.get("food_name"),
-                        "location_query": record.get("location_query"),
-                    }
-                request_input = {k: v for k, v in request_input.items() if v is not None}
-                timestamp = record.get("timestamp")
-                timestamp_iso = timestamp.isoformat() if timestamp else None
+                history_item = dict(record)
+               
+                history_item.pop("_id", None)
 
-                history_item = {
-                    "feature_name": feature_name,
-                    "request_id": str(record["_id"]), 
-                    "timestamp": timestamp_iso,
-                    "request_input": request_input,
-                    
-                }
+                history_item["feature_name"] = feature_name
+
+                if "timestamp" in history_item and isinstance(history_item["timestamp"], datetime):
+                    history_item["timestamp"] = history_item["timestamp"].isoformat()
+
+                if feature_name == "food_classification" and "image" in history_item:
+                    # Replaced the large binary data with a simple indicator
+                    history_item["image"] = "[Binary Image Data Omitted]"
+                
+            
                 all_history.append(history_item)
     except Exception as e:
         # Handling Errors
@@ -569,7 +552,7 @@ def purchase_locations(purchase_data: PurchasePayload, current_user:dict=Depends
             "food_name": purchase_data.food_name.strip(),
             "location_query": purchase_data.location_query.strip() if purchase_data.location_query else None,
             "max_distance_km": purchase_data.max_distance_km if purchase_data.max_distance_km else None,
-            # "extra_inputs": purchase_data.extra_inputs if purchase_data.extra_inputs else None,
+            "extra_inputs": purchase_data.extra_inputs if purchase_data.extra_inputs else None,
             "timestamp": purchase_data.timestamp if purchase_data.timestamp else current_timestamp
             
             
@@ -581,6 +564,7 @@ def purchase_locations(purchase_data: PurchasePayload, current_user:dict=Depends
 
 
    
+
 
 
 
