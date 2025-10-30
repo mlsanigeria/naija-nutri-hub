@@ -396,7 +396,12 @@ async def recipe_generation(recipe_data: RecipePayload, current_user:dict = Depe
         )
      # Main Implementation (with function calls)
     try:
-        generated_recipe = get_recipe_for_dish(recipe_data.food_name.strip())
+        generated_recipe = get_recipe_for_dish(
+            food_name=recipe_data.food_name.strip(),
+            servings=recipe_data.servings,
+            dietary_restriction=recipe_data.dietary_restriction,
+            extra_inputs=recipe_data.extra_inputs
+        )
     except Exception as exc:
         raise HTTPException(status_code=500, detail=f"Recipe generation failed: {exc}")
     if not generated_recipe:
@@ -416,7 +421,7 @@ async def recipe_generation(recipe_data: RecipePayload, current_user:dict = Depe
 
     return {
         "message": "Recipe request stored successfully.",
-        "food_name: recipe_data.food_name.strip(),"
+        "food_name": recipe_data.food_name.strip(),
         "generated_recipe": generated_recipe,
         "request_metadata": {
             "timestamp": request_document["timestamp"].isoformat() if "timestamp" in request_document else None,
