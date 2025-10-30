@@ -297,8 +297,62 @@ async def get_user_history(current_user: dict = Depends(get_current_user)):
     """
     Returns a list of the user's request history across all features sorted by timestamp descending.
     """
+    user_email=current_user.get("email")
+    if not user_email:
+        raise HTTPException(status_code=400, detail="Authenticated user has no email record.")
+    feature_collections = [
+        (classification_requests, "food_classification"),
+        (recipe_requests, "recipe_generation"),
+        (nutrition_requests, "nutritional_estimates"),
+        (purchase_loc_requests, "purchase_locations"),
+    ]
+    all_history = []
+    try:
+        for collection, feature_name in feature_collections:
+            user_requests_cursor = collection.find({"email": user_email})
+            for record in user_requests_cursor:
+                request_input = {}
+                if feature_name == "food_classification":
+                    request_input = {"image_uploaded": True}
+                elif feature_name == "recipe_generation":
+                    request_input = {
+                        "food_name": record.get("food_name"),
+                        "servings": record.get("servings"),
+                        "dietary_restriction": record.get("dietary_restriction"),
+                    }
+                elif feature_name == "nutritional_estimates":
+                    request_input = {
+                        "food_name": record.get("food_name"),
+                        "portion_size": record.get("portion_size"),
+                    }
+                elif feature_name == "purchase_locations":
+                    request_input = {
+                        "food_name": record.get("food_name"),
+                        "location_query": record.get("location_query"),
+                    }
+                request_input = {k: v for k, v in request_input.items() if v is not None}
+                timestamp = record.get("timestamp")
+                timestamp_iso = timestamp.isoformat() if timestamp else None
 
-    return
+                history_item = {
+                    "feature_name": feature_name,
+                    "request_id": str(record["_id"]), 
+                    "timestamp": timestamp_iso,
+                    "request_input": request_input,
+                    
+                }
+                all_history.append(history_item)
+    except Exception as e:
+        # Handling Errors
+        raise HTTPException(status_code=500, detail=f"Failed to retrieve history from database: {str(e)}")
+
+    all_history.sort(key=lambda x: x.get("timestamp") or '0000-00-00T00:00:00', reverse=True)
+
+    if not all_history:
+        return {"message": "No history found for this user.", "history": []}
+
+      
+    return {"message": "User history retrieved successfully.", "history": all_history}
 
 
 
@@ -509,7 +563,7 @@ def purchase_locations(purchase_data: PurchasePayload, current_user:dict=Depends
             "food_name": purchase_data.food_name.strip(),
             "location_query": purchase_data.location_query.strip() if purchase_data.location_query else None,
             "max_distance_km": purchase_data.max_distance_km if purchase_data.max_distance_km else None,
-            "extra_inputs": purchase_data.extra_inputs if purchase_data.extra_inputs else None,
+            # "extra_inputs": purchase_data.extra_inputs if purchase_data.extra_inputs else None,
             "timestamp": purchase_data.timestamp if purchase_data.timestamp else current_timestamp
             
             
