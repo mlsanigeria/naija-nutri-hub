@@ -52,4 +52,7 @@ def get_recipe_for_dish(
 if __name__ == "__main__":
     # You can change this to test other dishes
     dish_to_try = "Jollof Rice" 
-    get_recipe_for_dish(dish_to_try)
+    servings = 4
+    dietary_restrictions = ["Gluten-free", "Nut allergy", "Halal"]
+    extra_context = "Preferred Cuisine: Yoruba preparation style"
+    get_recipe_for_dish(dish_to_try, servings, dietary_restrictions, extra_context)
