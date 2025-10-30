@@ -297,9 +297,12 @@ async def get_user_history(current_user: dict = Depends(get_current_user)):
     """
     Returns a list of the user's request history across all features sorted by timestamp descending.
     """
+    # Authentication
     user_email=current_user.get("email")
     if not user_email:
         raise HTTPException(status_code=400, detail="Authenticated user has no email record.")
+    
+    # Define the feature collections and their associated names
     feature_collections = [
         (classification_requests, "food_classification"),
         (recipe_requests, "recipe_generation"),
@@ -313,6 +316,7 @@ async def get_user_history(current_user: dict = Depends(get_current_user)):
             for record in user_requests_cursor:
                 request_input = {}
                 if feature_name == "food_classification":
+                    #  The full image data is not returned in the history API for performance/size reasons.
                     request_input = {"image_uploaded": True}
                 elif feature_name == "recipe_generation":
                     request_input = {
@@ -346,6 +350,8 @@ async def get_user_history(current_user: dict = Depends(get_current_user)):
         # Handling Errors
         raise HTTPException(status_code=500, detail=f"Failed to retrieve history from database: {str(e)}")
 
+    
+    #Sort the combined history by timestamp (descending)
     all_history.sort(key=lambda x: x.get("timestamp") or '0000-00-00T00:00:00', reverse=True)
 
     if not all_history:
@@ -575,6 +581,7 @@ def purchase_locations(purchase_data: PurchasePayload, current_user:dict=Depends
 
 
    
+
 
 
 
