@@ -248,15 +248,15 @@ def resend_otp(email: str):
 
 
 @app.post("/login", tags=["Authentication"])
-def login_user(form_data: LoginRequest = Depends()):
+def login_user(form_data: OAuth2PasswordRequestForm = Depends()):
     """
     Logs in a user and returns a JWT access token.
     FastAPI's form dependency expects 'username' and 'password' fields.
     """
     # Check if user exists (can be username or email)
-    user = get_user_via_username(form_data.username_email)
+    user = get_user_via_username(form_data.username)
     if not user:
-        user = get_user_via_email(form_data.username_email)
+        user = get_user_via_email(form_data.username)
 
     # Check password
     if not user or not verify_password(form_data.password, user["password_hash"]):
@@ -287,7 +287,20 @@ async def read_users_me(current_user: dict = Depends(get_current_user)):
     An example protected route that returns the current authenticated user's data.
     """
     # We serialize it here to hide sensitive info like password hash
-    return user_serializer(current_user)
+    user_email = current_user.get("email")
+    user_dict = user_auth.find_one({"email": user_email})
+    return user_serializer(user_dict)
+
+# Get User history
+@app.get("/users/history", tags=["Users"])
+async def get_user_history(current_user: dict = Depends(get_current_user)):
+    """
+    Returns a list of the user's request history across all features sorted by timestamp descending.
+    """
+
+    return
+
+
 
 
 @app.post("/verify_reset_otp", tags=["Authentication"])
