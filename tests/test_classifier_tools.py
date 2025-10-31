@@ -2,7 +2,7 @@ from src.food_classifier.classifier_tools import classify_food_image_azure
 
 
 def test_food_image():
-    image_path = r"C:\Users\OLALERE\Downloads\Testimages\IMG-20251027-WA0022.jpg"  # Replace with your actual image path
+    image_path = ""  # Replace with your actual image path
     result = classify_food_image_azure(image_path)
     print("Predicted food:", result)
         
