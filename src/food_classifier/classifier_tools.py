@@ -3,14 +3,17 @@ try:
     from ultralytics import YOLO
 except:
     import os
-    # os.system('pip uninstall ultralytics')
-    # os.system('pip install ultralytics')
-    # from ultralytics import YOLO
+    os.system('pip uninstall ultralytics')
+    os.system('pip install ultralytics')
+    from ultralytics import YOLO
 
 from PIL import Image
 import os
 import stat
 import shutil
+from azure.cognitiveservices.vision.customvision.prediction import CustomVisionPredictionClient
+from msrest.authentication import ApiKeyCredentials
+
 
 def get_latest_path(root_dir):
   files={filename.split('train')[-1]:filename for filename in os.listdir(root_dir) if filename.startswith("train")}
@@ -76,9 +79,50 @@ def classify_food_image(image) -> str:
 
     return predicted_food
 
-def classify_food_image_azure(image) -> str:
-    """
-    Classifies a food image using trained model from Azure Custom Vision and returns the predicted food name.
-    """
 
-    return
+def classify_food_image_azure(image_path: str) -> str:
+    """
+    Classifies a food image using the Azure Function.
+    """
+    try:
+        image = Image.open(image_path)
+    except Exception as e:
+        raise ValueError(f"Error opening image: {e}")
+
+    # Loading Credentials from Environment Variables
+    prediction_key = os.environ.get("VISION_PREDICTION_KEY")
+    endpoint = os.environ.get("VISION_PREDICTION_ENDPOINT")
+    project_id = os.environ.get("VISION_PROJECT_ID")
+    publish_iteration_name = os.environ.get("VISION_ITERATION_NAME")
+
+    # Validate required environment variables
+    if not prediction_key:
+        raise EnvironmentError("VISION_PREDICTION_KEY environment variable is not set or empty.")
+    if not endpoint:
+        raise EnvironmentError("VISION_PREDICTION_ENDPOINT environment variable is not set or empty.")
+    if not project_id:
+        raise EnvironmentError("VISION_PROJECT_ID environment variable is not set or empty.")
+    if not publish_iteration_name:
+        raise EnvironmentError("VISION_ITERATION_NAME environment variable is not set or empty.")
+    
+    # Authentication (ensure values are str, not Optional[str])
+    credentials = ApiKeyCredentials(in_headers={"Prediction-key": prediction_key})
+    predictor = CustomVisionPredictionClient(endpoint, credentials)
+    # Open image and send to Azure for classification
+    try:
+        with open(image_path, "rb") as image_data:
+            results = predictor.classify_image(project_id, publish_iteration_name, image_data.read())
+        # Return the most confident prediction    
+        if results.predictions:
+            top_prediction = max(results.predictions, key=lambda p: p.probability)
+            return top_prediction.tag_name
+        else:
+            return "No prediction returned"
+
+    except Exception as e:
+        print(f"Error during classification: {e}")
+        return "prediction failed"
+                        
+    
+   
+
