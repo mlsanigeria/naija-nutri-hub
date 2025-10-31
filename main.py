@@ -1,6 +1,7 @@
 import os
 import random
 import uuid
+import base64
 from dotenv import load_dotenv
 from datetime import datetime, timedelta, timezone
 from typing import Optional
@@ -585,6 +586,11 @@ def purchase_locations(purchase_data: PurchasePayload, current_user:dict=Depends
 
 
    
+
+
+
+
+
 
 
 
