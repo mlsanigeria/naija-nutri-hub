@@ -11,6 +11,7 @@ from fastapi import FastAPI, Depends, status, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.exceptions import HTTPException
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from fastapi.responses import Response
 from bson import ObjectId
 from auth.service import resend_otp_service
 from auth.mail import send_email_otp, send_email_welcome
@@ -319,13 +320,15 @@ async def get_user_history(current_user: dict = Depends(get_current_user)):
 
                 history_item["feature_name"] = feature_name
 
-                if "timestamp" in history_item and isinstance(history_item["timestamp"], datetime):
-                    history_item["timestamp"] = history_item["timestamp"].isoformat()
+                # if "timestamp" in history_item and isinstance(history_item["timestamp"], datetime):
+                #     history_item["timestamp"] = history_item["timestamp"].isoformat()
+                    
                 if feature_name == "food_classification" and "image" in history_item:
                     request_id = str(record["_id"])
                     del history_item["image"]
-                    history_item["image_download_url"] = f"/features/food_classification/image/{request_id}"
+                    history_item["image_download_id"] = request_id
                 all_history.append(history_item)
+
     except Exception as e:
         # Handling Errors
         raise HTTPException(status_code=500, detail=f"Failed to retrieve history from database: {str(e)}")
@@ -337,7 +340,6 @@ async def get_user_history(current_user: dict = Depends(get_current_user)):
    
     if not all_history:
         return {"message": "No history found for this user.", "history": []}
-
 
     return {"message": "User history retrieved successfully.", "history": all_history}
 
@@ -404,17 +406,23 @@ async def get_classification_image(request_id: str, current_user: dict = Depends
         raise HTTPException(status_code=401, detail="Unauthorized")
 
     try:
-        
         image_record = classification_requests.find_one({
             "_id": ObjectId(request_id),
             "email": user_email 
         })
+        img_field = image_record.get("image")
+        img_bytes = bytes(img_field)  # Binary is a bytes-like object
+        mime = image_record.get("content_type", "application/octet-stream")
+        
     except Exception:
         raise HTTPException(status_code=400, detail="Invalid Request ID format.")
 
     if not image_record:
-        
         raise HTTPException(status_code=404, detail="Image record not found for this ID.")
+
+    return Response(content=img_bytes, media_type=mime)
+
+
 # Feature Enpoints
 
 ## Food Classification
@@ -436,7 +444,8 @@ async def food_classification(image: UploadFile = File(...), current_user: dict 
         raise HTTPException(status_code=400, detail="Authenticated user has no email")
 
     try:
-        payload = ClassificationPayload(email=user_email, image=img_bytes)
+        content_type = image.content_type
+        payload = ClassificationPayload(email=user_email, image=img_bytes, content_type=content_type)
     except ValidationError as ve:
         raise HTTPException(status_code=400, detail=str(ve))
 
@@ -448,13 +457,12 @@ async def food_classification(image: UploadFile = File(...), current_user: dict 
         doc = {
             "email": str(payload.email),
             "image": Binary(payload.image),
-            "timestamp": payload.timestamp
+            "content_type": payload.content_type,
+            "timestamp": payload.timestamp,
         }
 
         result = classification_requests.insert_one(doc)
 
-        request_id = str(result.inserted_id)
-        image_download_url = f"/features/food_classification/image/{request_id}"
         return {"status": "success", "inserted_id": str(result.inserted_id)}
 
     except Exception as e:

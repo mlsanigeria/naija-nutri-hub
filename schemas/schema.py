@@ -49,6 +49,7 @@ class ResetPasswordRequest(BaseModel):
 class ClassificationPayload(BaseModel):
     email: EmailStr
     image: bytes
+    content_type: str
     timestamp: datetime = Field(default_factory=datetime.utcnow)
 
 
