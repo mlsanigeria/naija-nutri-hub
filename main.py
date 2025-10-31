@@ -1,6 +1,7 @@
 import os
 import random
 import uuid
+import base64
 from dotenv import load_dotenv
 from datetime import datetime, timedelta, timezone
 from typing import Optional
@@ -322,6 +323,15 @@ async def get_user_history(current_user: dict = Depends(get_current_user)):
 
                 if "timestamp" in history_item and isinstance(history_item["timestamp"], datetime):
                     history_item["timestamp"] = history_item["timestamp"].isoformat()
+                if feature_name == "food_classification" and "image" in history_item:
+                    try:
+                        image_bytes = bytes(history_item["image"]) 
+                        history_item["image"] = base64.b64encode(image_bytes).decode('utf-8')
+                        history_item["image_format"] = "base64_encoded"
+                    except Exception as base64_e:
+                         
+                        print(f"Base64 encoding failed: {base64_e}")
+                        history_item["image"] = "[Base64 Encoding Failed]"
                 all_history.append(history_item)
     except Exception as e:
         # Handling Errors
@@ -558,6 +568,7 @@ def purchase_locations(purchase_data: PurchasePayload, current_user:dict=Depends
 
 
    
+
 
 
 
