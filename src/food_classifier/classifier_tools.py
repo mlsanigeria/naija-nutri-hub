@@ -3,9 +3,9 @@ try:
     from ultralytics import YOLO
 except:
     import os
-    os.system('pip uninstall ultralytics')
-    os.system('pip install ultralytics')
-    from ultralytics import YOLO
+    # os.system('pip uninstall ultralytics')
+    # os.system('pip install ultralytics')
+    # from ultralytics import YOLO
 
 from PIL import Image
 import os
@@ -14,6 +14,9 @@ import shutil
 from azure.cognitiveservices.vision.customvision.prediction import CustomVisionPredictionClient
 from msrest.authentication import ApiKeyCredentials
 
+from dotenv import load_dotenv
+
+load_dotenv()
 
 def get_latest_path(root_dir):
   files={filename.split('train')[-1]:filename for filename in os.listdir(root_dir) if filename.startswith("train")}
@@ -82,8 +85,9 @@ def classify_food_image(image) -> str:
 
 def classify_food_image_azure(image_path: str) -> str:
     """
-    Classifies a food image using the Azure Function.
+    Classifies a food image using trained model from Azure Custom Vision and returns the predicted food name.
     """
+    
     try:
         image = Image.open(image_path)
     except Exception as e:
