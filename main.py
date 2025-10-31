@@ -297,8 +297,50 @@ async def get_user_history(current_user: dict = Depends(get_current_user)):
     """
     Returns a list of the user's request history across all features sorted by timestamp descending.
     """
+    # Authentication
+    user_email=current_user.get("email")
+    if not user_email:
+        raise HTTPException(status_code=400, detail="Authenticated user has no email record.")
+    feature_collections = [
+        (classification_requests, "food_classification"),
+        (recipe_requests, "recipe_generation"),
+        (nutrition_requests, "nutritional_estimates"),
+        (purchase_loc_requests, "purchase_locations"),
+    ]
+    all_history = []
+    try:
+        for collection, feature_name in feature_collections:
+            user_requests_cursor = collection.find({"email": user_email})
+            for record in user_requests_cursor:
+                history_item = dict(record)
 
-    return
+                history_item.pop("_id", None)
+
+                history_item["feature_name"] = feature_name
+
+                if "timestamp" in history_item and isinstance(history_item["timestamp"], datetime):
+                    history_item["timestamp"] = history_item["timestamp"].isoformat()
+                if feature_name == "food_classification" and "image" in history_item:
+                    request_id = str(record["_id"])
+                    del history_item["image"]
+                    history_item["image_download_url"] = f"/features/food_classification/image/{request_id}"
+                all_history.append(history_item)
+    except Exception as e:
+        # Handling Errors
+        raise HTTPException(status_code=500, detail=f"Failed to retrieve history from database: {str(e)}")
+
+
+    #Sort the combined history by timestamp (descending)
+    all_history.sort(key=lambda x: x.get("timestamp") or '0000-00-00T00:00:00', reverse=True)
+
+   
+    if not all_history:
+        return {"message": "No history found for this user.", "history": []}
+
+
+    return {"message": "User history retrieved successfully.", "history": all_history}
+
+    
 
 
 
@@ -349,7 +391,29 @@ def reset_password(req: ResetPasswordRequest):
     otp_record.delete_one({"email": req.email})
     return {"message": "Password reset successfully"}
 
+#  Image Retrieval Endpoint 
+@app.get("/features/food_classification/image/{request_id}", tags=["Features"])
+async def get_classification_image(request_id: str, current_user: dict = Depends(get_current_user)):
+    """
+    Retrieves the raw image file associated with a specific classification request ID.
+    The image is returned as a streamable file.
+    """
+    user_email = current_user.get("email")
+    if not user_email:
+        raise HTTPException(status_code=401, detail="Unauthorized")
 
+    try:
+        
+        image_record = classification_requests.find_one({
+            "_id": ObjectId(request_id),
+            "email": user_email 
+        })
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid Request ID format.")
+
+    if not image_record:
+        
+        raise HTTPException(status_code=404, detail="Image record not found for this ID.")
 # Feature Enpoints
 
 ## Food Classification
@@ -387,6 +451,9 @@ async def food_classification(image: UploadFile = File(...), current_user: dict 
         }
 
         result = classification_requests.insert_one(doc)
+
+        request_id = str(result.inserted_id)
+        image_download_url = f"/features/food_classification/image/{request_id}"
         return {"status": "success", "inserted_id": str(result.inserted_id)}
 
     except Exception as e:
