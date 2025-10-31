@@ -322,13 +322,7 @@ async def get_user_history(current_user: dict = Depends(get_current_user)):
 
                 if "timestamp" in history_item and isinstance(history_item["timestamp"], datetime):
                     history_item["timestamp"] = history_item["timestamp"].isoformat()
-
-                if feature_name == "food_classification" and "image" in history_item:
-                    # Replaced the large binary data with a simple indicator
-                    history_item["image"] = "[Binary Image Data Omitted]"
-                
-            
-                all_history.append(history_item)
+                    all_history.append(history_item)
     except Exception as e:
         # Handling Errors
         raise HTTPException(status_code=500, detail=f"Failed to retrieve history from database: {str(e)}")
@@ -564,6 +558,7 @@ def purchase_locations(purchase_data: PurchasePayload, current_user:dict=Depends
 
 
    
+
 
 
 
