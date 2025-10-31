@@ -322,7 +322,7 @@ async def get_user_history(current_user: dict = Depends(get_current_user)):
 
                 if "timestamp" in history_item and isinstance(history_item["timestamp"], datetime):
                     history_item["timestamp"] = history_item["timestamp"].isoformat()
-                    all_history.append(history_item)
+                all_history.append(history_item)
     except Exception as e:
         # Handling Errors
         raise HTTPException(status_code=500, detail=f"Failed to retrieve history from database: {str(e)}")
@@ -558,6 +558,7 @@ def purchase_locations(purchase_data: PurchasePayload, current_user:dict=Depends
 
 
    
+
 
 
 
