@@ -509,10 +509,7 @@ def purchase_locations(purchase_data: PurchasePayload, current_user:dict=Depends
             "food_name": purchase_data.food_name.strip(),
             "location_query": purchase_data.location_query.strip() if purchase_data.location_query else None,
             "max_distance_km": purchase_data.max_distance_km if purchase_data.max_distance_km else None,
-            "extra_inputs": purchase_data.extra_inputs if purchase_data.extra_inputs else None,
             "timestamp": purchase_data.timestamp if purchase_data.timestamp else current_timestamp
-            
-            
         }
         result = purchase_loc_requests.insert_one(purchase_record)
         return {"status":"successs", "inserted_id":str(result.inserted_id)}
