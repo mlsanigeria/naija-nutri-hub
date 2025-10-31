@@ -7,6 +7,7 @@ except:
     # os.system('pip install ultralytics')
     # from ultralytics import YOLO
 
+import io
 from PIL import Image
 import os
 import stat
@@ -83,13 +84,14 @@ def classify_food_image(image) -> str:
     return predicted_food
 
 
-def classify_food_image_azure(image_path: str) -> str:
+def classify_food_image_azure(img_bytes) -> str:
     """
     Classifies a food image using trained model from Azure Custom Vision and returns the predicted food name.
     """
     
     try:
-        image = Image.open(image_path)
+        image = Image.open(io.BytesIO(img_bytes))
+
     except Exception as e:
         raise ValueError(f"Error opening image: {e}")
 
