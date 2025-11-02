@@ -84,8 +84,8 @@ Thank you to all our fantastic contributors for their hard work and dedication! 
 | 6 | 🥉 | <img src='https://avatars.githubusercontent.com/u/114394219?v=4' alt='Avatar' width='30' height='30'> | [ishanpeshkar](https://github.com/ishanpeshkar) | 2 |
 | 7 | 🥉 | <img src='https://avatars.githubusercontent.com/u/103088635?v=4' alt='Avatar' width='30' height='30'> | [KingDavid2908](https://github.com/KingDavid2908) | 2 |
 | 8 | 🥉 | <img src='https://avatars.githubusercontent.com/u/173927960?v=4' alt='Avatar' width='30' height='30'> | [Nishchal-29](https://github.com/Nishchal-29) | 2 |
-| 9 | 4 | <img src='https://avatars.githubusercontent.com/u/182611319?v=4' alt='Avatar' width='30' height='30'> | [aneeshsunganahalli](https://github.com/aneeshsunganahalli) | 1 |
-| 10 | 4 | <img src='https://avatars.githubusercontent.com/u/144328549?v=4' alt='Avatar' width='30' height='30'> | [G26karthik](https://github.com/G26karthik) | 1 |
+| 9 | 4 | <img src='https://avatars.githubusercontent.com/u/106073318?v=4' alt='Avatar' width='30' height='30'> | [Abdulbaasiterinkitola](https://github.com/Abdulbaasiterinkitola) | 1 |
+| 10 | 4 | <img src='https://avatars.githubusercontent.com/u/182611319?v=4' alt='Avatar' width='30' height='30'> | [aneeshsunganahalli](https://github.com/aneeshsunganahalli) | 1 |
 
 Thank you to all our fantastic contributors for their hard work and dedication!
 
