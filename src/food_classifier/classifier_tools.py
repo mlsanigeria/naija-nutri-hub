@@ -1,114 +1,100 @@
-try:
-    from ultralytics import YOLO
-except:
-    import os
-    os.system('pip uninstall ultralytics -y')
-    os.system('pip install ultralytics')
-    from ultralytics import YOLO
-
-from PIL import Image
-import os
-import stat
-import shutil
-import pandas as pd
-import json
+from ultralytics import YOLO
 from openai import AzureOpenAI
+from PIL import Image
+import os, re, json, pandas as pd, yaml
 from dotenv import load_dotenv
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics.pairwise import cosine_similarity
+
 load_dotenv()
-import yaml
-import json
-import re
+
 
 def load_prompts(path="./src/food_classifier/classifier_prompt.yml"):
-    """Load all classifier prompts from YAML."""
-    try:
-        with open(path, "r", encoding="utf-8") as f:
-            return yaml.safe_load(f)
-    except Exception as e:
-        raise Exception(f"Failed to load prompts: {e}")
+    with open(path, "r", encoding="utf-8") as f:
+        return yaml.safe_load(f)
 
 
 
+import shutil
 
-
-
-def get_latest_path(root_dir):
-    files = {filename.split('train')[-1]: filename for filename in os.listdir(root_dir) if filename.startswith("train")}
-    return files[max(files.keys())]
-
-def remove_readonly(func, path, exc_info):
-    os.chmod(path, stat.S_IWRITE)
-    func(path)
 
 def get_weights():
-    if not os.path.exists("./weights/best.pt"):
-        weights_dir = "./weights"
-        dst = os.path.join(weights_dir, "best.pt")
-        os.makedirs(weights_dir, exist_ok=True)
-        try:
-            os.system('git clone https://huggingface.co/GboyeStack/NigerFoodAi ./model_clone')
-        except:
-            raise Exception("Unable to download model weights. Please check your internet connection.")
-        else:
-            shutil.copytree('./model_clone/runs','./runs')
-            shutil.rmtree('./model_clone',onerror=remove_readonly)
-            weights_path=f"./runs/classify/{get_latest_path('./runs/classify')}/weights/last.pt"
-            shutil.copy(weights_path,dst)
-            shutil.rmtree('./runs',onerror=remove_readonly)
+    weights_dir = "./weights"
+    dst = os.path.join(weights_dir, "best.pt")
 
-    return "./weights/best.pt"
+    
+    if os.path.exists(dst):
+        print(" Using existing model weights.")
+        return dst
+
+    print(" Downloading model weights from Hugging Face...")
+
+    
+    if os.path.exists("./model_clone"):
+        shutil.rmtree("./model_clone", ignore_errors=True)
+
+    os.makedirs(weights_dir, exist_ok=True)
+
+    #
+    exit_code = os.system("git clone https://huggingface.co/GboyeStack/NigerFoodAi ./model_clone")
+    if exit_code != 0:
+        raise Exception(" Git clone failed. Check your internet connection or Hugging Face access.")
+
+    
+    classify_dir = os.path.join("model_clone", "runs", "classify")
+    if not os.path.exists(classify_dir):
+        raise FileNotFoundError(" No 'runs/classify' folder found in the cloned repo. Check the repo structure.")
+
+    subdirs = [d for d in os.listdir(classify_dir) if os.path.isdir(os.path.join(classify_dir, d))]
+    if not subdirs:
+        raise FileNotFoundError(" No subdirectories found inside 'runs/classify'.")
+
+    latest_subdir = max(subdirs, key=lambda d: os.path.getmtime(os.path.join(classify_dir, d)))
+    weights_path = os.path.join(classify_dir, latest_subdir, "weights", "last.pt")
+
+    if not os.path.exists(weights_path):
+        raise FileNotFoundError(" Could not find 'last.pt' in the cloned repository.")
+
+    shutil.copy(weights_path, dst)
+    print(f" Model weights copied to {dst}")
+
+    # Clean up
+    shutil.rmtree("./model_clone", ignore_errors=True)
+
+    return dst
+
 
 def load_model(model_path: str):
-    model = YOLO(model_path)
-    return model
+    return YOLO(model_path)
 
 
 
-def classify_food_image(image) -> str:
-    model_path = os.path.join(os.path.dirname(__file__), "weights", "best.pt")
-    model_path = os.path.abspath(model_path)
-    classifier = load_model(model_path)
-    predicted_food = classifier.names[classifier(image)[0].probs.top1]
-    return predicted_food.capitalize()  
+def classify_food_image(image):
+    model = load_model(get_weights())
+    results = model(image)[0]
+    probs = results.probs.data.tolist()
+    top_index = results.probs.top1
+    top_conf = results.probs.top1conf.item()
+    predicted_food = model.names[top_index]
+    return predicted_food.capitalize(), top_conf
 
+# ---------------- TF-IDF SIMILARITY SEARCH ----------------
+def get_closest_food_tfidf(food_name: str, dataset_path="./data/Nigerian Foods.csv", threshold=0.5):
+    df = pd.read_csv(dataset_path)
+    names = df["Food_Name"].fillna("").tolist()
+    vectorizer = TfidfVectorizer().fit(names + [food_name])
+    vectors = vectorizer.transform(names + [food_name])
+    similarities = cosine_similarity(vectors[-1], vectors[:-1]).flatten()
+    best_match_idx = similarities.argmax()
+    best_score = similarities[best_match_idx]
+    if best_score >= threshold:
+        return df.iloc[best_match_idx]["Food_Name"]
+    return None
 
-
-def load_food_dataset(path: str = "./data/Nigerian Foods.csv"):
-    """Loads Nigerian food dataset."""
-    try:
-        return pd.read_csv(path)
-    except Exception as e:
-        raise Exception(f"Unable to load dataset: {e}")
-
-def get_food_base_info(food_name: str):
-    """Returns base info for a food item from the dataset."""
-    df = load_food_dataset()
-    match = df[df['Food_Name'].str.lower() == food_name.lower()]
-    
-    if not match.empty:
-        row = match.iloc[0]
-        return {
-            "name": row['Food_Name'],
-            "description": row.get('Description', None),
-            "origin": row.get('Origin', None),
-            "spice_level": row.get('Spice_Level', None),
-            "main_ingredients": row.get('Main_Ingredients', None)
-        }
-    else:
-        return {"name": food_name}
-
-
-
-
-
-def enrich_food_info(predicted_food: str):
-    """
-    Enriches a classified food name with cultural and nutritional context using Azure OpenAI.
-    """
-
-    food_name = predicted_food.strip().capitalize()
+# ---------------- GENAI ENRICHMENT ----------------
+def enrich_food_info(food_name: str):
     prompts = load_prompts()
-    enrichment_prompt = prompts.get("enrichment_prompt", "").replace("{{food_name}}", food_name)
+    enrichment_prompt = prompts["enrichment_prompt"].replace("{{food_name}}", food_name)
 
     client = AzureOpenAI(
         azure_endpoint=os.getenv("AZURE_OPENAI_BASE_URL"),
@@ -126,9 +112,9 @@ def enrich_food_info(predicted_food: str):
             temperature=0.5,
         )
 
-        raw_text = response.choices[0].message.content.strip()
-        cleaned_text = re.sub(r"```json|```", "", raw_text).strip()
-        info = json.loads(cleaned_text)
+        raw = response.choices[0].message.content.strip()
+        cleaned = re.sub(r"```json|```", "", raw).strip()
+        info = json.loads(cleaned)
 
         return {
             "food_name": info.get("food_name", food_name),
@@ -139,15 +125,43 @@ def enrich_food_info(predicted_food: str):
         }
 
     except Exception as e:
-        print(f"❌ Azure enrichment failed: {e}")
+        print(f" GenAI enrichment failed: {e}")
         return {
             "food_name": food_name,
-            "description": "Unknown",
-            "origin": "Unknown",
+            "description": "No description available.",
+            "origin": "Nigeria",
             "spice_level": "Unknown",
             "main_ingredients": []
         }
 
+# ---------------- MAIN PIPELINE ----------------
+def classify_and_enrich(image):
+    food_name, confidence = classify_food_image(image)
 
-    return enriched_info
+    # Low confidence or unknown category → use TF-IDF or GenAI
+    if confidence < 0.75:
+        similar = get_closest_food_tfidf(food_name)
+        if similar:
+            print(f"⚠️ Low confidence ({confidence:.2f}), using closest match: {similar}")
+            food_name = similar
+        else:
+            print(f"⚠️ Unknown food '{food_name}', enriching with GenAI...")
 
+    enriched = enrich_food_info(food_name)
+
+    
+    print(f"""
+Food Name: {enriched['food_name']}
+Description: {enriched['description']}
+Origin: {enriched['origin']}
+Spice Level: {enriched['spice_level']}
+Main Ingredients: {', '.join(enriched['main_ingredients'])}
+    """)
+
+    return enriched
+
+
+if __name__ == "__main__":
+    image_path = os.path.join(os.path.dirname(__file__), "test_images", "image.jpeg")
+    image = Image.open(image_path).convert("RGB")
+    result = classify_and_enrich(image)
