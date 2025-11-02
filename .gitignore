@@ -13,7 +13,6 @@ venv/
 *.jpg
 *.jpeg
 *.png
-test_images/
 model_clone/
 weights/
 *.pt
