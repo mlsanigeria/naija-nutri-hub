@@ -47,19 +47,21 @@ from schemas.schema import (
     NutritionPayload,
     PurchasePayload,
 )
+
 # Auth DB
 from config.database import otp_record, user_auth
 # Features DB
 
 from config.database import classification_requests, recipe_requests, nutrition_requests, purchase_loc_requests
 
+# Import the nutritional facts extraction function
+from src.nutritional_facts.nutritional_facts import get_structured_nutrition
 
 # Import the recipe generation function
 from src.recipe_generation.recipe_generation import get_recipe_for_dish
 
 # Load environment variables
 load_dotenv()
-
 
 SECRET_KEY = os.getenv("SECRET_KEY", "a_very_secret_key_for_development")
 ALGORITHM = "HS256"
@@ -522,7 +524,7 @@ async def recipe_generation(recipe_data: RecipePayload, current_user:dict = Depe
 
 ## Nutritional Values Generation
 @app.post("/features/nutritional_estimates", tags=["Features"])
-def nutritional_estimates(nutrition_data: NutritionPayload, current_user:dict = Depends(get_current_user)):
+async def nutritional_estimates(nutrition_data: NutritionPayload, current_user:dict = Depends(get_current_user)):
     """
     Accepts food name and other optional details, returns nutritional estimates
     """
@@ -536,27 +538,48 @@ def nutritional_estimates(nutrition_data: NutritionPayload, current_user:dict = 
                 detail="Food name is required and cannot be empty"
             )
         
-    # Main Implementation (with function calls)
-
-    
-    # Store request in DB
+    # --- Main Implementation (with function calls) ---
     try:
-        user_email = current_user["email"]
+        nutritional_result = get_structured_nutrition(
+            food_name=nutrition_data.food_name.strip(),
+            portion_size=nutrition_data.portion_size,
+            extra_inputs=str(nutrition_data.extra_inputs) if nutrition_data.extra_inputs else None
+        )
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Nutritional estimation failed: {exc}")
+
+    if not nutritional_result:
+        raise HTTPException(status_code=404, detail="Unable to generate nutritional data for this food.")
+    
+    # --- Store request in DB ---
+    try:
+        user_email = current_user.get("email")
         current_timestamp = datetime.utcnow()
+        
         nutrition_record = {
             "email": user_email,
             "food_name": nutrition_data.food_name.strip(),
             "portion_size": nutrition_data.portion_size.strip() if nutrition_data.portion_size else None,
             "extra_inputs": nutrition_data.extra_inputs if nutrition_data.extra_inputs else None,
             "timestamp": nutrition_data.timestamp if nutrition_data.timestamp else current_timestamp,
-            "created_at": current_timestamp
-         }
+            "created_at": current_timestamp,
+            "nutritional_result": nutritional_result
+        }
         result = nutrition_requests.insert_one(nutrition_record)
-        return {"status":"successs", "inserted_id":str(result.inserted_id)}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to save request to database: {e}")
         
-            
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to save nutrition request to database: {e}")
+
+    return {
+        "message": "Nutritional estimates generated successfully.",
+        "food_name": nutrition_data.food_name.strip(),
+        "nutritional_estimate": nutritional_result,
+        "request_metadata": {
+            "timestamp": nutrition_record["timestamp"].isoformat() if "timestamp" in nutrition_record else None,
+            "user_email": user_email,
+            "request_id": str(result.inserted_id),
+        },
+    }
 
 ## Purchase Locations
 @app.post("/features/purchase_locations", tags=["Features"])
@@ -588,7 +611,7 @@ def purchase_locations(purchase_data: PurchasePayload, current_user:dict=Depends
             "timestamp": purchase_data.timestamp if purchase_data.timestamp else current_timestamp
         }
         result = purchase_loc_requests.insert_one(purchase_record)
-        return {"status":"successs", "inserted_id":str(result.inserted_id)}
+        return {"status":"success", "inserted_id":str(result.inserted_id)}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to save request to database: {e}")
 

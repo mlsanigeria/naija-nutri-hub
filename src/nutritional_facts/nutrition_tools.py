@@ -204,7 +204,7 @@ def combine_nutrition_sources(
     mealdb_data: dict,
     spoon_data: dict,
     serving_description: Optional[str] = None,
-    extra_inputs: Optional[dict] = None,
+    extra_inputs: Optional[str] = None,
 ) -> Dict[str, Any]:
     has_dataset = bool(dataset_data and dataset_data.get("data_found"))
     has_mealdb = bool(mealdb_data and mealdb_data.get("data_found"))
@@ -235,7 +235,7 @@ def combine_nutrition_sources(
         "api_context": api_context,
         "inferred_context": json.dumps(inferred_context, indent=2),
         "sources": {"dataset": has_dataset, "mealdb": has_mealdb, "spoonacular": has_spoon},
-        "extra_inputs": extra_inputs or {},
+        "extra_inputs": str(extra_inputs) if extra_inputs is not None else None,
     }
 
 
@@ -248,7 +248,7 @@ def format_nutrition_output(data: dict) -> Dict[str, Any]:
         "retrieved_dataset_context": data.get("retrieved_dataset_context"),
         "api_context": data.get("api_context"),
         "inferred_context": data.get("inferred_context"),
-        "extra_inputs": data.get("extra_inputs", {}),
+        "extra_inputs": data.get("extra_inputs"),
     }
 
 
