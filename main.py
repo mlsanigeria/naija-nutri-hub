@@ -244,7 +244,6 @@ def verify_user_account(otp_data: OTPVerifyRequest):
         raise HTTPException(status_code=500, detail=f"Unexpected error during verification email: {str(e)}")
 
 
-
 @app.post("/resend_otp", tags=["Authentication"])
 def resend_otp(email: str):
     """Resend OTP using the service function."""
@@ -295,6 +294,7 @@ async def read_users_me(current_user: dict = Depends(get_current_user)):
     user_dict = user_auth.find_one({"email": user_email})
     return user_serializer(user_dict)
 
+
 # Get User history
 @app.get("/users/history", tags=["Users"])
 async def get_user_history(current_user: dict = Depends(get_current_user)):
@@ -344,9 +344,6 @@ async def get_user_history(current_user: dict = Depends(get_current_user)):
         return {"message": "No history found for this user.", "history": []}
 
     return {"message": "User history retrieved successfully.", "history": all_history}
-
-    
-
 
 
 
@@ -542,7 +539,7 @@ async def nutritional_estimates(nutrition_data: NutritionPayload, current_user:d
     try:
         nutritional_result = get_structured_nutrition(
             food_name=nutrition_data.food_name.strip(),
-            portion_size=nutrition_data.portion_size,
+            servings=float(nutrition_data.portion_size),
             extra_inputs=str(nutrition_data.extra_inputs) if nutrition_data.extra_inputs else None
         )
     except Exception as exc:
@@ -563,7 +560,6 @@ async def nutritional_estimates(nutrition_data: NutritionPayload, current_user:d
             "extra_inputs": nutrition_data.extra_inputs if nutrition_data.extra_inputs else None,
             "timestamp": nutrition_data.timestamp if nutrition_data.timestamp else current_timestamp,
             "created_at": current_timestamp,
-            "nutritional_result": nutritional_result
         }
         result = nutrition_requests.insert_one(nutrition_record)
         
@@ -572,7 +568,6 @@ async def nutritional_estimates(nutrition_data: NutritionPayload, current_user:d
 
     return {
         "message": "Nutritional estimates generated successfully.",
-        "food_name": nutrition_data.food_name.strip(),
         "nutritional_estimate": nutritional_result,
         "request_metadata": {
             "timestamp": nutrition_record["timestamp"].isoformat() if "timestamp" in nutrition_record else None,
