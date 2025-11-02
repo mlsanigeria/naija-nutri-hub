@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 from openai import AzureOpenAI
 from typing import Optional, Dict, Any
 
-from nutrition_tools import (
+from .nutrition_tools import (
     get_nutrition_from_dataset,   
     get_nutrition_from_mealdb,
     get_nutrition_from_spoonacular,
@@ -41,7 +41,7 @@ def fill_placeholders(template: str, placeholders: Dict[str, str]) -> str:
     return text
 
 
-def generate_structured_nutrition(food_name: str, grounded_data: dict, prompts: dict, servings: float = 1, extra_inputs: Optional[Dict[str, Any]] = None):
+def generate_structured_nutrition(food_name: str, grounded_data: dict, prompts: dict, servings: float = 1, extra_inputs: Optional[str] = None):
     nutrition_prompt = prompts.get("nutrition_prompt", {})
     grounding_prompt = nutrition_prompt.get("grounding_prompt", "")
     format_prompt = nutrition_prompt.get("format_prompt", "")
@@ -118,7 +118,7 @@ def generate_structured_nutrition(food_name: str, grounded_data: dict, prompts: 
         return {"error": "Could not parse model output as JSON", "exception": str(e)}
 
 
-def get_structured_nutrition(food_name: str, servings: float = 1, extra_inputs: Optional[Dict[str, Any]] = None, dataset_path: str = "data/Nigerian Foods.csv"):
+def get_structured_nutrition(food_name: str, servings: float = 1, extra_inputs: Optional[str] = None, dataset_path: str = "data/Nigerian Foods.csv"):
     prompts = load_prompts()
     
     
@@ -156,7 +156,7 @@ if __name__ == "__main__":
     except ValueError:
         servings = 1
     extra = input("Extra context (region/style) or Enter: ").strip()
-    extra_inputs = {"context": extra} if extra else None
+    extra_inputs = extra if extra else None
 
     result = get_structured_nutrition(food, servings=servings, extra_inputs=extra_inputs)
     print(json.dumps(result, indent=2))

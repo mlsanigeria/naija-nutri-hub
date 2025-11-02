@@ -1,6 +1,7 @@
 import os
 import random
 import uuid
+import base64
 from dotenv import load_dotenv
 from datetime import datetime, timedelta, timezone
 from typing import Optional
@@ -10,6 +11,7 @@ from fastapi import FastAPI, Depends, status, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.exceptions import HTTPException
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from fastapi.responses import Response
 from bson import ObjectId
 from auth.service import resend_otp_service
 from auth.mail import send_email_otp, send_email_welcome
@@ -45,19 +47,21 @@ from schemas.schema import (
     NutritionPayload,
     PurchasePayload,
 )
+
 # Auth DB
 from config.database import otp_record, user_auth
 # Features DB
 
 from config.database import classification_requests, recipe_requests, nutrition_requests, purchase_loc_requests
 
+# Import the nutritional facts extraction function
+from src.nutritional_facts.nutritional_facts import get_structured_nutrition
 
 # Import the recipe generation function
 from src.recipe_generation.recipe_generation import get_recipe_for_dish
 
 # Load environment variables
 load_dotenv()
-
 
 SECRET_KEY = os.getenv("SECRET_KEY", "a_very_secret_key_for_development")
 ALGORITHM = "HS256"
@@ -240,7 +244,6 @@ def verify_user_account(otp_data: OTPVerifyRequest):
         raise HTTPException(status_code=500, detail=f"Unexpected error during verification email: {str(e)}")
 
 
-
 @app.post("/resend_otp", tags=["Authentication"])
 def resend_otp(email: str):
     """Resend OTP using the service function."""
@@ -287,7 +290,61 @@ async def read_users_me(current_user: dict = Depends(get_current_user)):
     An example protected route that returns the current authenticated user's data.
     """
     # We serialize it here to hide sensitive info like password hash
-    return user_serializer(current_user)
+    user_email = current_user.get("email")
+    user_dict = user_auth.find_one({"email": user_email})
+    return user_serializer(user_dict)
+
+
+# Get User history
+@app.get("/users/history", tags=["Users"])
+async def get_user_history(current_user: dict = Depends(get_current_user)):
+    """
+    Returns a list of the user's request history across all features sorted by timestamp descending.
+    """
+    # Authentication
+    user_email=current_user.get("email")
+    if not user_email:
+        raise HTTPException(status_code=400, detail="Authenticated user has no email record.")
+    feature_collections = [
+        (classification_requests, "food_classification"),
+        (recipe_requests, "recipe_generation"),
+        (nutrition_requests, "nutritional_estimates"),
+        (purchase_loc_requests, "purchase_locations"),
+    ]
+    all_history = []
+    try:
+        for collection, feature_name in feature_collections:
+            user_requests_cursor = collection.find({"email": user_email})
+            for record in user_requests_cursor:
+                history_item = dict(record)
+
+                history_item.pop("_id", None)
+
+                history_item["feature_name"] = feature_name
+
+                # if "timestamp" in history_item and isinstance(history_item["timestamp"], datetime):
+                #     history_item["timestamp"] = history_item["timestamp"].isoformat()
+                    
+                if feature_name == "food_classification" and "image" in history_item:
+                    request_id = str(record["_id"])
+                    del history_item["image"]
+                    history_item["image_download_id"] = request_id
+                all_history.append(history_item)
+
+    except Exception as e:
+        # Handling Errors
+        raise HTTPException(status_code=500, detail=f"Failed to retrieve history from database: {str(e)}")
+
+
+    #Sort the combined history by timestamp (descending)
+    all_history.sort(key=lambda x: x.get("timestamp") or '0000-00-00T00:00:00', reverse=True)
+
+   
+    if not all_history:
+        return {"message": "No history found for this user.", "history": []}
+
+    return {"message": "User history retrieved successfully.", "history": all_history}
+
 
 
 @app.post("/verify_reset_otp", tags=["Authentication"])
@@ -336,6 +393,34 @@ def reset_password(req: ResetPasswordRequest):
     otp_record.delete_one({"email": req.email})
     return {"message": "Password reset successfully"}
 
+#  Image Retrieval Endpoint 
+@app.get("/features/food_classification/image/{request_id}", tags=["Features"])
+async def get_classification_image(request_id: str, current_user: dict = Depends(get_current_user)):
+    """
+    Retrieves the raw image file associated with a specific classification request ID.
+    The image is returned as a streamable file.
+    """
+    user_email = current_user.get("email")
+    if not user_email:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
+    try:
+        image_record = classification_requests.find_one({
+            "_id": ObjectId(request_id),
+            "email": user_email 
+        })
+        img_field = image_record.get("image")
+        img_bytes = bytes(img_field)  # Binary is a bytes-like object
+        mime = image_record.get("content_type", "application/octet-stream")
+        
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid Request ID format.")
+
+    if not image_record:
+        raise HTTPException(status_code=404, detail="Image record not found for this ID.")
+
+    return Response(content=img_bytes, media_type=mime)
+
 
 # Feature Enpoints
 
@@ -358,7 +443,8 @@ async def food_classification(image: UploadFile = File(...), current_user: dict 
         raise HTTPException(status_code=400, detail="Authenticated user has no email")
 
     try:
-        payload = ClassificationPayload(email=user_email, image=img_bytes)
+        content_type = image.content_type
+        payload = ClassificationPayload(email=user_email, image=img_bytes, content_type=content_type)
     except ValidationError as ve:
         raise HTTPException(status_code=400, detail=str(ve))
 
@@ -370,10 +456,12 @@ async def food_classification(image: UploadFile = File(...), current_user: dict 
         doc = {
             "email": str(payload.email),
             "image": Binary(payload.image),
-            "timestamp": payload.timestamp
+            "content_type": payload.content_type,
+            "timestamp": payload.timestamp,
         }
 
         result = classification_requests.insert_one(doc)
+
         return {"status": "success", "inserted_id": str(result.inserted_id)}
 
     except Exception as e:
@@ -396,7 +484,12 @@ async def recipe_generation(recipe_data: RecipePayload, current_user:dict = Depe
         )
      # Main Implementation (with function calls)
     try:
-        generated_recipe = get_recipe_for_dish(recipe_data.food_name.strip())
+        generated_recipe = get_recipe_for_dish(
+            food_name=recipe_data.food_name.strip(),
+            servings=recipe_data.servings,
+            dietary_restriction=recipe_data.dietary_restriction,
+            extra_inputs=recipe_data.extra_inputs
+        )
     except Exception as exc:
         raise HTTPException(status_code=500, detail=f"Recipe generation failed: {exc}")
     if not generated_recipe:
@@ -416,7 +509,7 @@ async def recipe_generation(recipe_data: RecipePayload, current_user:dict = Depe
 
     return {
         "message": "Recipe request stored successfully.",
-        "food_name: recipe_data.food_name.strip(),"
+        "food_name": recipe_data.food_name.strip(),
         "generated_recipe": generated_recipe,
         "request_metadata": {
             "timestamp": request_document["timestamp"].isoformat() if "timestamp" in request_document else None,
@@ -428,7 +521,7 @@ async def recipe_generation(recipe_data: RecipePayload, current_user:dict = Depe
 
 ## Nutritional Values Generation
 @app.post("/features/nutritional_estimates", tags=["Features"])
-def nutritional_estimates(nutrition_data: NutritionPayload, current_user:dict = Depends(get_current_user)):
+async def nutritional_estimates(nutrition_data: NutritionPayload, current_user:dict = Depends(get_current_user)):
     """
     Accepts food name and other optional details, returns nutritional estimates
     """
@@ -442,27 +535,46 @@ def nutritional_estimates(nutrition_data: NutritionPayload, current_user:dict = 
                 detail="Food name is required and cannot be empty"
             )
         
-    # Main Implementation (with function calls)
-
-    
-    # Store request in DB
+    # --- Main Implementation (with function calls) ---
     try:
-        user_email = current_user["email"]
+        nutritional_result = get_structured_nutrition(
+            food_name=nutrition_data.food_name.strip(),
+            servings=float(nutrition_data.portion_size),
+            extra_inputs=str(nutrition_data.extra_inputs) if nutrition_data.extra_inputs else None
+        )
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Nutritional estimation failed: {exc}")
+
+    if not nutritional_result:
+        raise HTTPException(status_code=404, detail="Unable to generate nutritional data for this food.")
+    
+    # --- Store request in DB ---
+    try:
+        user_email = current_user.get("email")
         current_timestamp = datetime.utcnow()
+        
         nutrition_record = {
             "email": user_email,
             "food_name": nutrition_data.food_name.strip(),
             "portion_size": nutrition_data.portion_size.strip() if nutrition_data.portion_size else None,
             "extra_inputs": nutrition_data.extra_inputs if nutrition_data.extra_inputs else None,
             "timestamp": nutrition_data.timestamp if nutrition_data.timestamp else current_timestamp,
-            "created_at": current_timestamp
-         }
+            "created_at": current_timestamp,
+        }
         result = nutrition_requests.insert_one(nutrition_record)
-        return {"status":"successs", "inserted_id":str(result.inserted_id)}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to save request to database: {e}")
         
-            
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to save nutrition request to database: {e}")
+
+    return {
+        "message": "Nutritional estimates generated successfully.",
+        "nutritional_estimate": nutritional_result,
+        "request_metadata": {
+            "timestamp": nutrition_record["timestamp"].isoformat() if "timestamp" in nutrition_record else None,
+            "user_email": user_email,
+            "request_id": str(result.inserted_id),
+        },
+    }
 
 ## Purchase Locations
 @app.post("/features/purchase_locations", tags=["Features"])
@@ -491,18 +603,20 @@ def purchase_locations(purchase_data: PurchasePayload, current_user:dict=Depends
             "food_name": purchase_data.food_name.strip(),
             "location_query": purchase_data.location_query.strip() if purchase_data.location_query else None,
             "max_distance_km": purchase_data.max_distance_km if purchase_data.max_distance_km else None,
-            "extra_inputs": purchase_data.extra_inputs if purchase_data.extra_inputs else None,
             "timestamp": purchase_data.timestamp if purchase_data.timestamp else current_timestamp
-            
-            
         }
         result = purchase_loc_requests.insert_one(purchase_record)
-        return {"status":"successs", "inserted_id":str(result.inserted_id)}
+        return {"status":"success", "inserted_id":str(result.inserted_id)}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to save request to database: {e}")
 
 
    
+
+
+
+
+
 
 
 
