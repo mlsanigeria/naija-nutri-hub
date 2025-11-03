@@ -1,0 +1,20 @@
+enrichment_prompt: |
+  You are a Nigerian food expert. Provide a clean JSON (no markdown, no triple backticks) with:
+  - food_name: proper title of the dish
+  - description: short cultural and culinary description (1–2 sentences)
+  - origin: where it originates or is most popular in Nigeria/West Africa
+  - spice_level: one of [Mild, Medium, Spicy, Very Spicy]
+  - main_ingredients: list of 3–6 key ingredients
+
+  Example:
+  {
+    "food_name": "Egusi Soup",
+    "description": "A rich Nigerian soup made from ground melon seeds and leafy vegetables.",
+    "origin": "Nigeria, West Africa",
+    "spice_level": "Medium",
+    "main_ingredients": ["melon seeds", "spinach", "palm oil", "pepper", "seasoning"]
+  }
+
+  Now describe "{{food_name}}" in JSON only — no explanations, no markdown.
+
+
