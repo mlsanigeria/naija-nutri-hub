@@ -90,16 +90,16 @@ def classify_food_image_azure(img_bytes) -> str:
     """
     
     try:
-        image = Image.open(io.BytesIO(img_bytes))
-
+        # image = Image.open(io.BytesIO(img_bytes))
+        pass
     except Exception as e:
         raise ValueError(f"Error opening image: {e}")
 
     # Loading Credentials from Environment Variables
-    prediction_key = os.environ.get("VISION_PREDICTION_KEY")
-    endpoint = os.environ.get("VISION_PREDICTION_ENDPOINT")
-    project_id = os.environ.get("VISION_PROJECT_ID")
-    publish_iteration_name = os.environ.get("VISION_ITERATION_NAME")
+    prediction_key = os.getenv("VISION_PREDICTION_KEY")
+    endpoint = os.getenv("VISION_PREDICTION_ENDPOINT")
+    project_id = os.getenv("VISION_PROJECT_ID")
+    publish_iteration_name = os.getenv("VISION_ITERATION_NAME")
 
     # Validate required environment variables
     if not prediction_key:
@@ -116,8 +116,8 @@ def classify_food_image_azure(img_bytes) -> str:
     predictor = CustomVisionPredictionClient(endpoint, credentials)
     # Open image and send to Azure for classification
     try:
-        with open(image_path, "rb") as image_data:
-            results = predictor.classify_image(project_id, publish_iteration_name, image_data.read())
+        # with open(image_path, "rb") as image_data:
+        results = predictor.classify_image(project_id, publish_iteration_name, img_bytes)
         # Return the most confident prediction    
         if results.predictions:
             top_prediction = max(results.predictions, key=lambda p: p.probability)

@@ -13,3 +13,5 @@ venv/
 *.jpg
 *.jpeg
 *.png
+*.ipynb_checkpoints
+*upload_progress.json
