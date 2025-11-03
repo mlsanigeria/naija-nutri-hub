@@ -14,5 +14,4 @@ venv/
 *.jpeg
 *.png
 model_clone/
-weights/
-*.pt
+test_images/
