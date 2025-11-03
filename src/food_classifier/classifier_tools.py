@@ -79,7 +79,8 @@ def classify_food_image_azure(img_bytes: bytes) -> str:
     Returns the top predicted food name.
     """
     try:
-        Image.open(io.BytesIO(img_bytes))  
+        # Image.open(io.BytesIO(img_bytes))  
+        pass
     except Exception as e:
         raise ValueError(f"Error opening image: {e}")
 
@@ -99,12 +100,16 @@ def classify_food_image_azure(img_bytes: bytes) -> str:
         results = predictor.classify_image(project_id, publish_iteration_name, img_bytes)
         if results.predictions:
             top_prediction = max(results.predictions, key=lambda p: p.probability)
-            return top_prediction.tag_name, float(top_prediction.probability)
+            result = {
+                "food_name": top_prediction.tag_name,
+                "confidence": float(top_prediction.probability)
+            }
+            return result
         else:
-            return "No prediction returned", 0.0
+            return {"food_name": "Unknown", "confidence": 0.0}
     except Exception as e:
         print(f"Azure classification failed: {e}")
-        return "prediction failed", 0.0
+        return {"food_name": "Error", "confidence": 0.0}
     #return {"food_name": "Jollof Rice", "confidence": 0.97}
 
 
@@ -197,12 +202,12 @@ def enrich_food_info(food_name):
 
 # Main Pipeline Function
 
-def classify_and_enrich(image_path):
+def classify_and_enrich(img_bytes: bytes) -> dict:
     """
-    Takes a food image, classifies it (mock Azure), then enriches the result.
+    Takes a food image, classifies it (Azure or fallback to YOLO), then enriches the result.
     """
-    with open(image_path, "rb") as f:
-        img_bytes = f.read()
+    # with open(image_path, "rb") as f:
+    #     img_bytes = f.read()
 
     try:
         azure_result = classify_food_image_azure(img_bytes)
@@ -210,12 +215,12 @@ def classify_and_enrich(image_path):
         confidence = azure_result.get("confidence", 0.9)
         source = "azure"
 
-        print(f"Azure mock classification successful: {food_name}")
+        print(f"Azure classification successful: {food_name}")
 
     except Exception as e:
         print(f" Azure classification failed, falling back to YOLO: {e}")
-        image = Image.open(image_path).convert("RGB")
-        food_name = classify_food_image(image)
+        # image = Image.open(image_path).convert("RGB")
+        food_name = classify_food_image(img_bytes)
         confidence = 0.7
         source = "yolo"
 
@@ -230,18 +235,20 @@ def classify_and_enrich(image_path):
     enriched["confidence"] = confidence
     enriched["source"] = source
 
-    print("\n Final Enriched Output:")
-    print(json.dumps(enriched, indent=4))
+    # print("\n Final Enriched Output:")
+    # print(json.dumps(enriched, indent=4))
     return enriched
-
 
 
 # Test Run
 
 if __name__ == "__main__":
     test_image = os.path.join(os.path.dirname(__file__), "test_images", "image.jpeg")
+    with open(test_image, "rb") as f:
+        test_image = f.read()
 
     if not os.path.exists(test_image):
         print(" No test image found. Please add one under src/food_classifier/test_images/")
     else:
-        classify_and_enrich(test_image)
+        print("\n Final Enriched Output:")
+        print(classify_and_enrich(test_image))
