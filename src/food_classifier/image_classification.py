@@ -4,19 +4,18 @@ import os
 import json
 
 def classify_image(image) -> dict:
-    """
-    Classifies a food image and enriches the result with contextual info.
-    """
-    food_name, confidence = classify_food_image(image)
+    food_name = classify_food_image(image)
     enriched_info = enrich_food_info(food_name)
 
     result = {
         "food_name": food_name,
-        "confidence": confidence,
+        "confidence": None,  
         **enriched_info
     }
 
     return result
+
+
 
 if __name__ == "__main__":
     image_path = os.path.join(os.path.dirname(__file__), "test_images", "image.jpeg")
