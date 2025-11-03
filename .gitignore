@@ -13,5 +13,7 @@ venv/
 *.jpg
 *.jpeg
 *.png
+*.ipynb_checkpoints
+*upload_progress.json
 model_clone/
 test_images/
