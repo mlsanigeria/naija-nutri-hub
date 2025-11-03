@@ -1,6 +1,4 @@
-
 # Food Classification and Enrichment Tool
-
 
 import io
 import os
@@ -85,10 +83,11 @@ def classify_food_image_azure(img_bytes: bytes) -> str:
     except Exception as e:
         raise ValueError(f"Error opening image: {e}")
 
-    prediction_key = os.environ.get("VISION_PREDICTION_KEY")
-    endpoint = os.environ.get("VISION_PREDICTION_ENDPOINT")
-    project_id = os.environ.get("VISION_PROJECT_ID")
-    publish_iteration_name = os.environ.get("VISION_ITERATION_NAME")
+    # Loading Credentials from Environment Variables
+    prediction_key = os.getenv("VISION_PREDICTION_KEY")
+    endpoint = os.getenv("VISION_PREDICTION_ENDPOINT")
+    project_id = os.getenv("VISION_PROJECT_ID")
+    publish_iteration_name = os.getenv("VISION_ITERATION_NAME")
 
     if not all([prediction_key, endpoint, project_id, publish_iteration_name]):
         raise EnvironmentError("Missing Azure Custom Vision environment variables.")
@@ -194,8 +193,6 @@ def enrich_food_info(food_name):
             "spice_level": "Unknown",
             "main_ingredients": [],
         }
-
-
 
 
 # Main Pipeline Function
