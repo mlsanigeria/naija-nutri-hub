@@ -4,15 +4,16 @@ import os
 import json
 
 def classify_image(image) -> dict:
-    food_name = classify_food_image(image)
-    enriched_info = enrich_food_info(food_name)
-    classified_and_enriched = classify_and_enrich(image_path)
+    
+    # food_name = classify_food_image(image)
+    # enriched_info = enrich_food_info(food_name)
+    # classified_and_enriched = classify_and_enrich(image_path)
 
-    result = {
-        "food_name": food_name,
-        "confidence": None,  
-        **classified_and_enriched
-    }
+    # result = {
+    #     "food_name": food_name,
+    #     "confidence": None,  
+    #     **classified_and_enriched
+    # }
 
     full_info = classify_and_enrich(image)
 
