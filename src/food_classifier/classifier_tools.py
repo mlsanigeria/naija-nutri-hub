@@ -236,7 +236,7 @@ def load_prompt_from_yaml(file_path="prompts/classifier_prompt.yml"):
         )
 
 
-def classify_food_genai(image_path: str):
+def classify_food_genai(img_bytes: bytes):
     """
     Uses GPT-Vision (OpenAI) for food classification when both Azure and YOLO fail or are uncertain.
     Loads classification logic from classifier_prompt.yml and returns:
@@ -244,9 +244,9 @@ def classify_food_genai(image_path: str):
     """
 
     # Load image
-    with open(image_path, "rb") as f:
-        img_bytes = f.read()
-        img_b64 = base64.b64encode(img_bytes).decode("utf-8")
+    # with open(image_path, "rb") as f:
+    #     img_bytes = f.read()
+    img_b64 = base64.b64encode(img_bytes).decode("utf-8")
 
     # Load dynamic prompt from YAML
     prompt_text = load_prompt_from_yaml()
@@ -357,7 +357,7 @@ def classify_and_enrich(img_bytes: bytes) -> dict:
     if confidence < 0.7:
         print("⚙️ Switching to GenAI image classification...")
         try:
-            genai_result = classify_food_genai(image_path)
+            genai_result = classify_food_genai(img_bytes)
             food_name = genai_result.get("food_name")
             confidence = genai_result.get("confidence", 0.85)
             source = "genai"
