@@ -14,11 +14,15 @@ def classify_image(image) -> dict:
         **classified_and_enriched
     }
 
-    return result
+    full_info = classify_and_enrich(image)
+
+    return full_info
 
 if __name__ == "__main__":
-    image_path = os.path.join(os.path.dirname(__file__), "test_images", "image.jpeg")
-    image = Image.open(image_path).convert("RGB")
+    image_path = os.path.join(os.path.dirname(__file__), "test_images", "image.jpg")
+    # image = Image.open(image_path).convert("RGB")
+    with open(image_path, "rb") as f:
+        image = f.read()
     result = classify_image(image)
     #print(json.dumps(result, indent=4))
 

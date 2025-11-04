@@ -1,6 +1,4 @@
-
 # Food Classification and Enrichment Tool
-
 
 import io
 import os
@@ -84,14 +82,16 @@ def classify_food_image_azure(img_bytes: bytes) -> str:
     Returns the top predicted food name.
     """
     try:
-        Image.open(io.BytesIO(img_bytes))  
+        # Image.open(io.BytesIO(img_bytes))  
+        pass
     except Exception as e:
         raise ValueError(f"Error opening image: {e}")
 
-    prediction_key = os.environ.get("VISION_PREDICTION_KEY")
-    endpoint = os.environ.get("VISION_PREDICTION_ENDPOINT")
-    project_id = os.environ.get("VISION_PROJECT_ID")
-    publish_iteration_name = os.environ.get("VISION_ITERATION_NAME")
+    # Loading Credentials from Environment Variables
+    prediction_key = os.getenv("VISION_PREDICTION_KEY")
+    endpoint = os.getenv("VISION_PREDICTION_ENDPOINT")
+    project_id = os.getenv("VISION_PROJECT_ID")
+    publish_iteration_name = os.getenv("VISION_ITERATION_NAME")
 
     if not all([prediction_key, endpoint, project_id, publish_iteration_name]):
         raise EnvironmentError("Missing Azure Custom Vision environment variables.")
@@ -103,12 +103,16 @@ def classify_food_image_azure(img_bytes: bytes) -> str:
         results = predictor.classify_image(project_id, publish_iteration_name, img_bytes)
         if results.predictions:
             top_prediction = max(results.predictions, key=lambda p: p.probability)
-            return top_prediction.tag_name, float(top_prediction.probability)
+            result = {
+                "food_name": top_prediction.tag_name,
+                "confidence": float(top_prediction.probability)
+            }
+            return result
         else:
-            return "No prediction returned", 0.0
+            return {"food_name": "Unknown", "confidence": 0.0}
     except Exception as e:
         print(f"Azure classification failed: {e}")
-        return "prediction failed", 0.0
+        return {"food_name": "Error", "confidence": 0.0}
     #return {"food_name": "Jollof Rice", "confidence": 0.97}
     #return {"food_name": "garriandgrounut", "confidence": 0.60}
     #return {"food_name": "Efo riro", "confidence": 0.97}
@@ -393,7 +397,6 @@ def classify_and_enrich(image_path):
     return final_result
 
 
-
 # Test Run
 
 if __name__ == "__main__":
@@ -402,4 +405,5 @@ if __name__ == "__main__":
     if not os.path.exists(test_image):
         print(" No test image found. Please add one under src/food_classifier/test_images/")
     else:
-        classify_and_enrich(test_image)
+        print("\n Final Enriched Output:")
+        print(classify_and_enrich(test_image))
