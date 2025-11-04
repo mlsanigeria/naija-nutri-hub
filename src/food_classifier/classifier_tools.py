@@ -17,6 +17,10 @@ from sklearn.metrics.pairwise import cosine_similarity
 from azure.cognitiveservices.vision.customvision.prediction import CustomVisionPredictionClient
 from msrest.authentication import ApiKeyCredentials
 from openai import AzureOpenAI
+from rapidfuzz import fuzz
+import base64
+import yaml
+import openai
 
 # YOLO import (for fallback classification)
 try:
@@ -25,7 +29,6 @@ except:
     pass
 
 load_dotenv()
-
 
 # Utility Helpers
 
@@ -107,11 +110,10 @@ def classify_food_image_azure(img_bytes: bytes) -> str:
             return result
         else:
             return {"food_name": "Unknown", "confidence": 0.0}
+            
     except Exception as e:
         print(f"Azure classification failed: {e}")
         return {"food_name": "Error", "confidence": 0.0}
-    #return {"food_name": "Jollof Rice", "confidence": 0.97}
-
 
 
 # YOLO Fallback Classifier
@@ -124,25 +126,42 @@ def classify_food_image(image):
     return predicted_food
 
 
-# TF-IDF Matching (Backup)
+# TF-IDF Matching 
+def get_closest_food_tfidf(query, dataset_path="data/Nigerian Foods.csv", min_fuzzy_score=50):
+    df = pd.read_csv(dataset_path)
+    food_names = df["Food_Name"].astype(str).tolist()
 
-def get_closest_food_tfidf(food_name, dataset_path="./data/Nigerian Foods.csv", threshold=0.5):
-    try:
-        df = pd.read_csv(dataset_path)
-        if "Food_Name" not in df.columns:
-            raise ValueError("Dataset must contain a 'Food_Name' column.")
+    # --- TF-IDF similarity ---
+    vectorizer = TfidfVectorizer(stop_words="english")
+    tfidf_matrix = vectorizer.fit_transform(food_names)
+    query_vec = vectorizer.transform([query])
+    cosine_sim = cosine_similarity(query_vec, tfidf_matrix).flatten()
 
-        names = df["Food_Name"].fillna("").tolist()
-        vectorizer = TfidfVectorizer().fit(names + [food_name])
-        vectors = vectorizer.transform(names + [food_name])
-        similarities = cosine_similarity(vectors[-1], vectors[:-1]).flatten()
+    best_idx = cosine_sim.argmax()
+    best_food = food_names[best_idx]
+    best_score = cosine_sim[best_idx]
 
-        best_match_idx = similarities.argmax()
-        best_score = similarities[best_match_idx]
-        return df.iloc[best_match_idx]["Food_Name"] if best_score >= threshold else None
-    except Exception as e:
-        print(f" TF-IDF matching failed: {e}")
+    # --- Fuzzy token-based matching ---
+    fuzzy_scores = {name: fuzz.token_set_ratio(query.lower(), name.lower()) for name in food_names}
+    best_fuzzy_food = max(fuzzy_scores, key=fuzzy_scores.get)
+    best_fuzzy_score = fuzzy_scores[best_fuzzy_food]
+
+    # --- Select best match ---
+    if best_fuzzy_score >= min_fuzzy_score or best_score > 0.2:
+        matched = best_fuzzy_food if best_fuzzy_score >= min_fuzzy_score else best_food
+        print(f"🔍 Matched '{query}' → '{matched}' (Fuzzy={best_fuzzy_score:.2f}, TF-IDF={best_score:.2f})")
+    else:
+        print(f"⚠️ No strong match for '{query}' (TF-IDF={best_score:.2f}, Fuzzy={best_fuzzy_score:.2f})")
         return None
+
+    # --- Return only the selected columns ---
+    row = df[df["Food_Name"].str.lower() == matched.lower()].iloc[0]
+    return {
+        "food_name": row["Food_Name"],
+        "description": row["Description"],
+        "spice_level": row["Spice_Level"],
+        "main_ingredients": row["Main_Ingredients"],
+    }
 
 
 
@@ -169,7 +188,7 @@ def enrich_food_info(food_name):
 
     try:
         response = client.chat.completions.create(
-            model=os.getenv("AZURE_OPENAI_MODEL", "gpt-4o-mini"),
+            model=os.getenv("AZURE_OPENAI_DEPLOYMENT_NAME", "gpt-4o-mini"),
             messages=[
                 {"role": "system", "content": "You are a helpful Nigerian food expert."},
                 {"role": "user", "content": enrichment_prompt},
@@ -200,44 +219,179 @@ def enrich_food_info(food_name):
         }
 
 
+
+def load_prompt_from_yaml(file_path="prompts/classifier_prompt.yml"):
+    """
+    Loads the GenAI classification prompt from a YAML file.
+    """
+    try:
+        with open(file_path, "r", encoding="utf-8") as f:
+            prompt_data = yaml.safe_load(f)
+        return prompt_data.get("prompt", "")
+    except Exception as e:
+        print(f" Could not load classifier_prompt.yml: {e}")
+        return (
+            "You are an expert Nigerian food recognition assistant. "
+            "Identify the food in this image and provide key information."
+        )
+
+
+def classify_food_genai(image_path: str):
+    """
+    Uses GPT-Vision (OpenAI) for food classification when both Azure and YOLO fail or are uncertain.
+    Loads classification logic from classifier_prompt.yml and returns:
+    food_name, description, spice_level, main_ingredients, confidence, source.
+    """
+
+    # Load image
+    with open(image_path, "rb") as f:
+        img_bytes = f.read()
+        img_b64 = base64.b64encode(img_bytes).decode("utf-8")
+
+    # Load dynamic prompt from YAML
+    prompt_text = load_prompt_from_yaml()
+
+    print("🤖 Using GenAI fallback classification with enriched output...")
+
+    # Append structured output instruction
+    full_prompt = f"""
+{prompt_text}
+
+Please respond **strictly** in valid JSON with the following fields:
+{{
+    "food_name": "string",
+    "description": "string",
+    "spice_level": "string",
+    "main_ingredients": ["list", "of", "ingredients"],
+    "confidence": 0.0
+}}
+"""
+
+    try:
+        # OpenAI multimodal call
+        response = openai.ChatCompletion.create(
+            model=os.getenv("AZURE_OPENAI_DEPLOYMENT_NAME", "gpt-4o-mini"),
+            messages=[
+                {"role": "system", "content": "You are an expert Nigerian food classifier."},
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "text", "text": full_prompt},
+                        {"type": "image_url", "image_url": f"data:image/jpeg;base64,{img_b64}"}
+                    ],
+                },
+            ],
+            temperature=0.2,
+        )
+
+        reply = response["choices"][0]["message"]["content"].strip()
+
+        
+        try:
+            parsed = json.loads(reply)
+        except json.JSONDecodeError:
+            print(" Model response not valid JSON, using fallback parser.")
+            parsed = {
+                "food_name": reply,
+                "description": "A traditional Nigerian dish.",
+                "spice_level": "Medium",
+                "main_ingredients": ["Unknown"],
+                "confidence": 0.6
+            }
+
+        parsed["source"] = "genai"
+
+        print(f" GenAI classification successful: {parsed['food_name']} ({parsed['confidence']:.2f})")
+
+        return parsed
+
+    except Exception as e:
+        print(f" GenAI classification failed: {e}")
+        return {
+            "food_name": "Unknown",
+            "description": "Unable to classify image.",
+            "spice_level": "Unknown",
+            "main_ingredients": [],
+            "confidence": 0.0,
+            "source": "genai_error"
+        }
+
 # Main Pipeline Function
+
 
 def classify_and_enrich(img_bytes: bytes) -> dict:
     """
-    Takes a food image, classifies it (Azure or fallback to YOLO), then enriches the result.
+    Multi-stage food classification workflow:
+    1. Try Azure classification (or YOLO) first
+    2. If Azure confidence < 0.75 → fallback to GenAI
+    3. Always validate and enrich with TF-IDF if food exists in dataset
     """
+
+    # # Step 1: Read image bytes
     # with open(image_path, "rb") as f:
     #     img_bytes = f.read()
 
+    food_name, confidence, source = None, 0, None
+
+    # Step 2: Azure classification
     try:
         azure_result = classify_food_image_azure(img_bytes)
         food_name = azure_result.get("food_name")
         confidence = azure_result.get("confidence", 0.9)
         source = "azure"
-
-        print(f"Azure classification successful: {food_name}")
-
+        print(f" Azure classification: {food_name} ({confidence:.2f})")
     except Exception as e:
-        print(f" Azure classification failed, falling back to YOLO: {e}")
-        # image = Image.open(image_path).convert("RGB")
-        food_name = classify_food_image(img_bytes)
-        confidence = 0.7
-        source = "yolo"
+        print(f" Azure classification failed: {e}")
+        food_name, confidence, source = None, 0, "azure_failed"
 
-    if confidence < 0.75:
-        similar = get_closest_food_tfidf(food_name)
-        if similar:
-            print(f" Low confidence, using TF-IDF match: {similar}")
-            food_name = similar
-            source = "tfidf"
+    # # Step 3: YOLO fallback if Azure confidence is low
+    # if not food_name or confidence < 0.75:
+    #     print("⚙️ Switching to YOLO classification...")
+    #     image = Image.open(image_path).convert("RGB")
+    #     food_name = classify_food_image(image)
+    #     confidence = 0.7  # assume default confidence for YOLO
+    #     source = "yolo"
+    #     print(f" YOLO classification: {food_name} ({confidence:.2f})")
 
-    enriched = enrich_food_info(food_name)
-    enriched["confidence"] = confidence
-    enriched["source"] = source
+    # Step 4: GenAI fallback if YOLO confidence is still low
+    if confidence < 0.7:
+        print("⚙️ Switching to GenAI image classification...")
+        try:
+            genai_result = classify_food_genai(image_path)
+            food_name = genai_result.get("food_name")
+            confidence = genai_result.get("confidence", 0.85)
+            source = "genai"
+            print(f" GenAI classification: {food_name} ({confidence:.2f})")
+        except Exception as e:
+            print(f" GenAI classification failed: {e}")
 
-    # print("\n Final Enriched Output:")
-    # print(json.dumps(enriched, indent=4))
-    return enriched
+    # Step 5: Always run TF-IDF correction (if food name exists)
+    tfidf_data = get_closest_food_tfidf(food_name)
+    if tfidf_data:
+        food_name = tfidf_data["food_name"]
+        description = tfidf_data["description"]
+        spice_level = tfidf_data["spice_level"]
+        main_ingredients = tfidf_data["main_ingredients"]
+        source = "tfidf"
+    else:
+        enriched = enrich_food_info(food_name)
+        description = enriched.get("description", "")
+        spice_level = enriched.get("spice_level", "")
+        main_ingredients = enriched.get("main_ingredients", "")
+
+    # Step 6: Final result
+    final_result = {
+        "food_name": food_name,
+        "description": description,
+        "spice_level": spice_level,
+        "main_ingredients": main_ingredients,
+        "confidence": confidence,
+        "source": source
+    }
+
+    print("\n Final Enriched Output:")
+    print(json.dumps(final_result, indent=4))
+    return final_result
 
 
 # Test Run
@@ -246,7 +400,7 @@ if __name__ == "__main__":
     test_image = os.path.join(os.path.dirname(__file__), "test_images", "image.jpeg")
     with open(test_image, "rb") as f:
         test_image = f.read()
-
+    
     if not os.path.exists(test_image):
         print(" No test image found. Please add one under src/food_classifier/test_images/")
     else:
