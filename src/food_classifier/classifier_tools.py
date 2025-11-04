@@ -110,12 +110,10 @@ def classify_food_image_azure(img_bytes: bytes) -> str:
             return result
         else:
             return {"food_name": "Unknown", "confidence": 0.0}
+            
     except Exception as e:
         print(f"Azure classification failed: {e}")
         return {"food_name": "Error", "confidence": 0.0}
-    #return {"food_name": "Jollof Rice", "confidence": 0.97}
-    #return {"food_name": "garriandgrounut", "confidence": 0.60}
-    #return {"food_name": "Efo riro", "confidence": 0.97}
 
 
 # YOLO Fallback Classifier
@@ -321,18 +319,17 @@ Please respond **strictly** in valid JSON with the following fields:
 # Main Pipeline Function
 
 
-def classify_and_enrich(image_path):
+def classify_and_enrich(img_bytes: bytes) -> dict:
     """
     Multi-stage food classification workflow:
-    1. Try Azure classification first
-    2. If Azure confidence < 0.75 → fallback to YOLO
-    3. If YOLO confidence < 0.7 → fallback to GenAI
-    4. Always validate and enrich with TF-IDF if food exists in dataset
+    1. Try Azure classification (or YOLO) first
+    2. If Azure confidence < 0.75 → fallback to GenAI
+    3. Always validate and enrich with TF-IDF if food exists in dataset
     """
 
-    # Step 1: Read image bytes
-    with open(image_path, "rb") as f:
-        img_bytes = f.read()
+    # # Step 1: Read image bytes
+    # with open(image_path, "rb") as f:
+    #     img_bytes = f.read()
 
     food_name, confidence, source = None, 0, None
 
@@ -347,14 +344,14 @@ def classify_and_enrich(image_path):
         print(f" Azure classification failed: {e}")
         food_name, confidence, source = None, 0, "azure_failed"
 
-    # Step 3: YOLO fallback if Azure confidence is low
-    if not food_name or confidence < 0.75:
-        print("⚙️ Switching to YOLO classification...")
-        image = Image.open(image_path).convert("RGB")
-        food_name = classify_food_image(image)
-        confidence = 0.7  # assume default confidence for YOLO
-        source = "yolo"
-        print(f" YOLO classification: {food_name} ({confidence:.2f})")
+    # # Step 3: YOLO fallback if Azure confidence is low
+    # if not food_name or confidence < 0.75:
+    #     print("⚙️ Switching to YOLO classification...")
+    #     image = Image.open(image_path).convert("RGB")
+    #     food_name = classify_food_image(image)
+    #     confidence = 0.7  # assume default confidence for YOLO
+    #     source = "yolo"
+    #     print(f" YOLO classification: {food_name} ({confidence:.2f})")
 
     # Step 4: GenAI fallback if YOLO confidence is still low
     if confidence < 0.7:
@@ -400,8 +397,10 @@ def classify_and_enrich(image_path):
 # Test Run
 
 if __name__ == "__main__":
-    test_image = os.path.join(os.path.dirname(__file__), "test_images", "test_2.jpeg")
-
+    test_image = os.path.join(os.path.dirname(__file__), "test_images", "image.jpeg")
+    with open(test_image, "rb") as f:
+        test_image = f.read()
+    
     if not os.path.exists(test_image):
         print(" No test image found. Please add one under src/food_classifier/test_images/")
     else:
