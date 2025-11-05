@@ -475,9 +475,10 @@ def classify_and_enrich(img_bytes: bytes) -> dict:
         ])).strip(),
 
         
-        "origin": tfidf_context.get("origin", enriched.get("origin", "Nigeria")) if tfidf_context else enriched.get("origin", "Nigeria"),
-        "spice_level": tfidf_context.get("spice_level", enriched.get("spice_level", "Unknown")) if tfidf_context else enriched.get("spice_level", "Unknown"),
-        "main_ingredients": tfidf_context.get("main_ingredients", enriched.get("main_ingredients", [])) if tfidf_context else enriched.get("main_ingredients", []),
+        "origin": enriched.get("origin") or (tfidf_context.get("origin") if tfidf_context else "Nigeria"),
+        "spice_level": enriched.get("spice_level") or (tfidf_context.get("spice_level") if tfidf_context else "Unknown"),
+        "main_ingredients": enriched.get("main_ingredients") or (tfidf_context.get("main_ingredients") if tfidf_context else []),
+
 
         "confidence": confidence,
         "source": source,
