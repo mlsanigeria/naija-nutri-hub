@@ -20,11 +20,11 @@ def classify_image(image) -> dict:
     return full_info
 
 if __name__ == "__main__":
-    image_path = os.path.join(os.path.dirname(__file__), "test_images", "image.jpeg")
+    image_path = os.path.join(os.path.dirname(__file__), "test_images", "image.jpg")
     # image = Image.open(image_path).convert("RGB")
     with open(image_path, "rb") as f:
         image = f.read()
     result = classify_image(image)
-    #print(json.dumps(result, indent=4))
+    print(json.dumps(result, indent=4))
 
 

@@ -484,8 +484,8 @@ def classify_and_enrich(img_bytes: bytes) -> dict:
         "source": source,
     }
 
-    print("\n Final Enriched Output:")
-    print(json.dumps(final_result, indent=4))
+    # print("\n Final Enriched Output:")
+    # print(json.dumps(final_result, indent=4))
     return final_result
 
 
