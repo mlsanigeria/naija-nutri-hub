@@ -19,8 +19,8 @@ from msrest.authentication import ApiKeyCredentials
 from openai import AzureOpenAI
 from rapidfuzz import fuzz
 import base64
-import yaml
 import openai
+from openai import AzureOpenAI
 
 # YOLO import (for fallback classification)
 try:
@@ -151,7 +151,7 @@ def get_closest_food_tfidf(query, dataset_path="data/Nigerian Foods.csv", min_fu
         matched = best_fuzzy_food if best_fuzzy_score >= min_fuzzy_score else best_food
         print(f"🔍 Matched '{query}' → '{matched}' (Fuzzy={best_fuzzy_score:.2f}, TF-IDF={best_score:.2f})")
     else:
-        print(f"⚠️ No strong match for '{query}' (TF-IDF={best_score:.2f}, Fuzzy={best_fuzzy_score:.2f})")
+        print(f" No strong match for '{query}' (TF-IDF={best_score:.2f}, Fuzzy={best_fuzzy_score:.2f})")
         return None
 
     # --- Return only the selected columns ---
@@ -164,10 +164,62 @@ def get_closest_food_tfidf(query, dataset_path="data/Nigerian Foods.csv", min_fu
     }
 
 
+def load_food_dataset(path: str = "./data/Nigerian Foods.csv"):
+    """
+    Loads the food dataset (CSV or JSON) and returns it as a list of dicts.
+    Supports basic preprocessing to ensure consistent field naming.
+    """
+
+    if not os.path.exists(path):
+        print(f" Dataset file not found at {path}. Returning empty list.")
+        return []
+
+    try:
+        # Detect file format
+        if path.endswith(".csv"):
+            df = pd.read_csv(path, encoding="utf-8")
+            records = df.to_dict(orient="records")
+
+        elif path.endswith(".json"):
+            with open(path, "r", encoding="utf-8") as f:
+                records = json.load(f)
+
+        else:
+            print("Unsupported file format. Use CSV or JSON.")
+            return []
+
+        # Normalize keys for consistency
+        normalized = []
+        for item in records:
+            normalized.append({
+                "name": str(item.get("name") or item.get("food_name", "")).strip(),
+                "description": item.get("description", "").strip(),
+                "origin": item.get("origin", "Nigeria"),
+                "spice_level": item.get("spice_level", "Unknown"),
+                "main_ingredients": (
+                    item.get("main_ingredients")
+                    if isinstance(item.get("main_ingredients"), list)
+                    else [x.strip() for x in str(item.get("main_ingredients", "")).split(",") if x.strip()]
+                ),
+            })
+
+        print(f" Loaded {len(normalized)} food records from {path}")
+        return normalized
+
+    except Exception as e:
+        print(f" Failed to load dataset: {e}")
+        return []
+
 
 # Azure OpenAI Enrichment
 
-def enrich_food_info(food_name):
+
+def enrich_food_info(food_name, dataset):
+    """
+    Enriches food information using dataset context first,
+    and Azure OpenAI fallback if not found in dataset.
+    """
+
     def load_prompts(path="./src/food_classifier/classifier_prompt.yml"):
         try:
             with open(path, "r", encoding="utf-8") as f:
@@ -177,6 +229,30 @@ def enrich_food_info(food_name):
                 "enrichment_prompt": "Provide key facts about {{food_name}} including ingredients, origin, and description in JSON format."
             }
 
+    #  Attempt to find food info in dataset
+    matched_record = None
+    if isinstance(dataset, list):
+        matched_record = next(
+            (item for item in dataset if item.get("name", "").strip().lower() == food_name.strip().lower()),
+            None
+        )
+    elif hasattr(dataset, "iterrows"):  # Handle pandas DataFrame
+        for _, row in dataset.iterrows():
+            if str(row.get("name", "")).strip().lower() == food_name.strip().lower():
+                matched_record = row.to_dict()
+                break
+
+    #  If found in dataset, return enriched info directly
+    if matched_record:
+        return {
+            "food_name": food_name,
+            "description": matched_record.get("description", "No description available."),
+            "origin": matched_record.get("origin", "Nigeria"),
+            "spice_level": matched_record.get("spice_level", "Medium"),
+            "main_ingredients": matched_record.get("main_ingredients", []),
+        }
+
+    #  Otherwise, use Azure OpenAI for enrichment
     prompts = load_prompts()
     enrichment_prompt = prompts["enrichment_prompt"].replace("{{food_name}}", food_name)
 
@@ -339,6 +415,9 @@ def classify_and_enrich(img_bytes: bytes) -> dict:
     4 Combine classification + dataset context for grounded enrichment.
     """
 
+    # Step 0: Load dataset
+    dataset = load_food_dataset()
+
     # Step 1: Azure classification
     try:
         azure_result = classify_food_image_azure(img_bytes)
@@ -353,9 +432,11 @@ def classify_and_enrich(img_bytes: bytes) -> dict:
     # Step 2: GenAI fallback if confidence is low
     genai_result = None
     if confidence < 0.75:
-        print("⚙️ Azure confidence low, switching to GenAI...")
+        print("Azure confidence low, switching to GenAI...")
 
+        # Try to get dataset grounding for the uncertain food
         tfidf_context = get_closest_food_tfidf(food_name)
+
         grounding = (
             f"The most similar food in the dataset is {tfidf_context['food_name']}. "
             f"Description: {tfidf_context['description']}. "
@@ -367,30 +448,37 @@ def classify_and_enrich(img_bytes: bytes) -> dict:
         food_name = genai_result.get("food_name", food_name)
         confidence = genai_result.get("confidence", confidence)
         source = genai_result.get("source", source)
+
+        # Re-run dataset match for final classified name
+        tfidf_context = get_closest_food_tfidf(food_name)
     else:
-        # Even if Azure is confident, still retrieve context for enrichment
         tfidf_context = get_closest_food_tfidf(food_name)
 
-    # Step 3: Dataset grounding (only add if classification is uncertain)
+    # Step 3: Dataset grounding 
     grounding_info = ""
     if tfidf_context:
         grounding_info = (
-            f"Based on the dataset, {tfidf_context['food_name']} is described as: "
-            f"{tfidf_context['description']}. It usually includes {tfidf_context['main_ingredients']} "
-            f"and is typically {tfidf_context['spice_level']} in spice level."
+            f"{tfidf_context['description']}. "
         )
 
-    #  Skip irrelevant dataset text if GenAI identified a known food
-    if genai_result and "Unknown" not in genai_result["food_name"]:
-        grounding_info = ""
+    # Step 4: Enrichment (dataset always passed)
+    enriched = enrich_food_info(food_name, dataset)
 
-    # Step 4: Enrichment
-    enriched = enrich_food_info(food_name)
+    # Step 5: Combine final result
     final_result = {
         "food_name": enriched.get("food_name", food_name),
-        "description": f"{enriched.get('description', '')} {grounding_info}".strip(),
-        "spice_level": enriched.get("spice_level", tfidf_context.get("spice_level") if tfidf_context else "Unknown"),
-        "main_ingredients": enriched.get("main_ingredients", tfidf_context.get("main_ingredients") if tfidf_context else []),
+
+        
+        "description": " ".join(filter(None, [
+            enriched.get("description", "").strip(),
+            f"It is also a {tfidf_context['description'].strip()}" if tfidf_context and tfidf_context.get("description") else ""
+        ])).strip(),
+
+        
+        "origin": tfidf_context.get("origin", enriched.get("origin", "Nigeria")) if tfidf_context else enriched.get("origin", "Nigeria"),
+        "spice_level": tfidf_context.get("spice_level", enriched.get("spice_level", "Unknown")) if tfidf_context else enriched.get("spice_level", "Unknown"),
+        "main_ingredients": tfidf_context.get("main_ingredients", enriched.get("main_ingredients", [])) if tfidf_context else enriched.get("main_ingredients", []),
+
         "confidence": confidence,
         "source": source,
     }
@@ -398,7 +486,6 @@ def classify_and_enrich(img_bytes: bytes) -> dict:
     print("\n Final Enriched Output:")
     print(json.dumps(final_result, indent=4))
     return final_result
-
 
 
 # Test Run
