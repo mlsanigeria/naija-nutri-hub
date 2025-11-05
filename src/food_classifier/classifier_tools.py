@@ -219,8 +219,7 @@ def enrich_food_info(food_name):
         }
 
 
-
-def load_prompt_from_yaml(file_path="prompts/classifier_prompt.yml"):
+def load_prompt_from_yaml(file_path="./src/food_classifier/classifier_prompt.yml"):
     """
     Loads the GenAI classification prompt from a YAML file.
     """
@@ -229,47 +228,59 @@ def load_prompt_from_yaml(file_path="prompts/classifier_prompt.yml"):
             prompt_data = yaml.safe_load(f)
         return prompt_data.get("prompt", "")
     except Exception as e:
-        print(f" Could not load classifier_prompt.yml: {e}")
+        print(f"⚠️ Could not load classifier_prompt.yml: {e}")
         return (
             "You are an expert Nigerian food recognition assistant. "
             "Identify the food in this image and provide key information."
         )
 
 
-def classify_food_genai(image_path: str):
+
+# Main Pipeline Function
+
+def classify_food_genai(img_bytes: bytes, grounding_context: str = ""):
     """
-    Uses GPT-Vision (OpenAI) for food classification when both Azure and YOLO fail or are uncertain.
-    Loads classification logic from classifier_prompt.yml and returns:
-    food_name, description, spice_level, main_ingredients, confidence, source.
+    Uses GPT-Vision (Azure OpenAI) for food classification when confidence is low.
+    Combines image + retrieval (TF-IDF) grounding context.
     """
 
-    # Load image
-    with open(image_path, "rb") as f:
-        img_bytes = f.read()
-        img_b64 = base64.b64encode(img_bytes).decode("utf-8")
+    import base64, os, json, re
+    from openai import AzureOpenAI
 
-    # Load dynamic prompt from YAML
+    # Load base64 image
+    img_b64 = base64.b64encode(img_bytes).decode("utf-8")
+
+    # Load classification prompt from YAML
     prompt_text = load_prompt_from_yaml()
 
-    print("🤖 Using GenAI fallback classification with enriched output...")
-
-    # Append structured output instruction
+    # Add grounding context
     full_prompt = f"""
 {prompt_text}
 
-Please respond **strictly** in valid JSON with the following fields:
+Additional context to guide your reasoning:
+{grounding_context}
+
+Respond in *valid JSON only* with these fields:
 {{
-    "food_name": "string",
-    "description": "string",
-    "spice_level": "string",
-    "main_ingredients": ["list", "of", "ingredients"],
-    "confidence": 0.0
+  "food_name": "string",
+  "description": "string",
+  "spice_level": "string",
+  "main_ingredients": ["list", "of", "ingredients"],
+  "confidence": 0.0
 }}
 """
 
+    print(" Using GenAI classification (gpt-4o-mini)...")
+
     try:
-        # OpenAI multimodal call
-        response = openai.ChatCompletion.create(
+        #  Use the modern Azure OpenAI SDK
+        client = AzureOpenAI(
+            azure_endpoint=os.getenv("AZURE_OPENAI_BASE_URL", ""),
+            api_key=os.getenv("AZURE_OPENAI_API_KEY", ""),
+            api_version=os.getenv("AZURE_OPENAI_API_VERSION", "2024-06-01-preview"),
+        )
+
+        response = client.chat.completions.create(
             model=os.getenv("AZURE_OPENAI_DEPLOYMENT_NAME", "gpt-4o-mini"),
             messages=[
                 {"role": "system", "content": "You are an expert Nigerian food classifier."},
@@ -277,32 +288,34 @@ Please respond **strictly** in valid JSON with the following fields:
                     "role": "user",
                     "content": [
                         {"type": "text", "text": full_prompt},
-                        {"type": "image_url", "image_url": f"data:image/jpeg;base64,{img_b64}"}
+                        {
+                            "type": "image_url",
+                            "image_url": {
+                                "url": f"data:image/jpeg;base64,{img_b64}"
+                            }
+                        },
                     ],
                 },
             ],
-            temperature=0.2,
+            temperature=0.3,
         )
 
-        reply = response["choices"][0]["message"]["content"].strip()
+        reply = response.choices[0].message.content.strip()
 
-        
         try:
-            parsed = json.loads(reply)
-        except json.JSONDecodeError:
-            print(" Model response not valid JSON, using fallback parser.")
+            parsed = json.loads(re.sub(r"```json|```", "", reply))
+        except Exception:
+            print(" Model returned unstructured text, using fallback parser.")
             parsed = {
                 "food_name": reply,
-                "description": "A traditional Nigerian dish.",
+                "description": "Traditional Nigerian dish.",
                 "spice_level": "Medium",
                 "main_ingredients": ["Unknown"],
-                "confidence": 0.6
+                "confidence": 0.6,
             }
 
         parsed["source"] = "genai"
-
-        print(f" GenAI classification successful: {parsed['food_name']} ({parsed['confidence']:.2f})")
-
+        print(f"GenAI classification: {parsed['food_name']} ({parsed['confidence']:.2f})")
         return parsed
 
     except Exception as e:
@@ -313,85 +326,79 @@ Please respond **strictly** in valid JSON with the following fields:
             "spice_level": "Unknown",
             "main_ingredients": [],
             "confidence": 0.0,
-            "source": "genai_error"
+            "source": "genai_error",
         }
-
-# Main Pipeline Function
 
 
 def classify_and_enrich(img_bytes: bytes) -> dict:
     """
-    Multi-stage food classification workflow:
-    1. Try Azure classification (or YOLO) first
-    2. If Azure confidence < 0.75 → fallback to GenAI
-    3. Always validate and enrich with TF-IDF if food exists in dataset
+    Final workflow:
+    1 Try Azure Custom Vision classification.
+    2 If Azure confidence < 0.75 → fallback to GenAI (GPT-4o-mini).
+    3 Retrieve related info from dataset (TF-IDF).
+    4 Combine classification + dataset context for grounded enrichment.
     """
 
-    # # Step 1: Read image bytes
-    # with open(image_path, "rb") as f:
-    #     img_bytes = f.read()
-
-    food_name, confidence, source = None, 0, None
-
-    # Step 2: Azure classification
+    # Step 1: Azure classification
     try:
         azure_result = classify_food_image_azure(img_bytes)
         food_name = azure_result.get("food_name")
-        confidence = azure_result.get("confidence", 0.9)
+        confidence = azure_result.get("confidence", 0.0)
         source = "azure"
         print(f" Azure classification: {food_name} ({confidence:.2f})")
     except Exception as e:
         print(f" Azure classification failed: {e}")
-        food_name, confidence, source = None, 0, "azure_failed"
+        food_name, confidence, source = "Unknown", 0.0, "azure_failed"
 
-    # # Step 3: YOLO fallback if Azure confidence is low
-    # if not food_name or confidence < 0.75:
-    #     print("⚙️ Switching to YOLO classification...")
-    #     image = Image.open(image_path).convert("RGB")
-    #     food_name = classify_food_image(image)
-    #     confidence = 0.7  # assume default confidence for YOLO
-    #     source = "yolo"
-    #     print(f" YOLO classification: {food_name} ({confidence:.2f})")
+    # Step 2: GenAI fallback if confidence is low
+    genai_result = None
+    if confidence < 0.75:
+        print("⚙️ Azure confidence low, switching to GenAI...")
 
-    # Step 4: GenAI fallback if YOLO confidence is still low
-    if confidence < 0.7:
-        print("⚙️ Switching to GenAI image classification...")
-        try:
-            genai_result = classify_food_genai(image_path)
-            food_name = genai_result.get("food_name")
-            confidence = genai_result.get("confidence", 0.85)
-            source = "genai"
-            print(f" GenAI classification: {food_name} ({confidence:.2f})")
-        except Exception as e:
-            print(f" GenAI classification failed: {e}")
+        tfidf_context = get_closest_food_tfidf(food_name)
+        grounding = (
+            f"The most similar food in the dataset is {tfidf_context['food_name']}. "
+            f"Description: {tfidf_context['description']}. "
+            f"Ingredients: {tfidf_context['main_ingredients']}. "
+            f"Spice Level: {tfidf_context['spice_level']}."
+        ) if tfidf_context else "No similar food found in dataset."
 
-    # Step 5: Always run TF-IDF correction (if food name exists)
-    tfidf_data = get_closest_food_tfidf(food_name)
-    if tfidf_data:
-        food_name = tfidf_data["food_name"]
-        description = tfidf_data["description"]
-        spice_level = tfidf_data["spice_level"]
-        main_ingredients = tfidf_data["main_ingredients"]
-        source = "tfidf"
+        genai_result = classify_food_genai(img_bytes, grounding_context=grounding)
+        food_name = genai_result.get("food_name", food_name)
+        confidence = genai_result.get("confidence", confidence)
+        source = genai_result.get("source", source)
     else:
-        enriched = enrich_food_info(food_name)
-        description = enriched.get("description", "")
-        spice_level = enriched.get("spice_level", "")
-        main_ingredients = enriched.get("main_ingredients", "")
+        # Even if Azure is confident, still retrieve context for enrichment
+        tfidf_context = get_closest_food_tfidf(food_name)
 
-    # Step 6: Final result
+    # Step 3: Dataset grounding (only add if classification is uncertain)
+    grounding_info = ""
+    if tfidf_context:
+        grounding_info = (
+            f"Based on the dataset, {tfidf_context['food_name']} is described as: "
+            f"{tfidf_context['description']}. It usually includes {tfidf_context['main_ingredients']} "
+            f"and is typically {tfidf_context['spice_level']} in spice level."
+        )
+
+    #  Skip irrelevant dataset text if GenAI identified a known food
+    if genai_result and "Unknown" not in genai_result["food_name"]:
+        grounding_info = ""
+
+    # Step 4: Enrichment
+    enriched = enrich_food_info(food_name)
     final_result = {
-        "food_name": food_name,
-        "description": description,
-        "spice_level": spice_level,
-        "main_ingredients": main_ingredients,
+        "food_name": enriched.get("food_name", food_name),
+        "description": f"{enriched.get('description', '')} {grounding_info}".strip(),
+        "spice_level": enriched.get("spice_level", tfidf_context.get("spice_level") if tfidf_context else "Unknown"),
+        "main_ingredients": enriched.get("main_ingredients", tfidf_context.get("main_ingredients") if tfidf_context else []),
         "confidence": confidence,
-        "source": source
+        "source": source,
     }
 
     print("\n Final Enriched Output:")
     print(json.dumps(final_result, indent=4))
     return final_result
+
 
 
 # Test Run
