@@ -76,16 +76,16 @@ Thank you to all our fantastic contributors for their hard work and dedication! 
 
 | S/N | Rank || Contributor | Merged PRs |
 |--| ---- | -- |----------- | ---------- |
-| 1 | 🥇 | <img src='https://avatars.githubusercontent.com/u/106810199?v=4' alt='Avatar' width='30' height='30'> | [Omoytom](https://github.com/Omoytom) | 5 |
-| 2 | 🥈 | <img src='https://avatars.githubusercontent.com/u/183400810?v=4' alt='Avatar' width='30' height='30'> | [Adi-3108](https://github.com/Adi-3108) | 4 |
-| 3 | 🥈 | <img src='https://avatars.githubusercontent.com/u/190011583?v=4' alt='Avatar' width='30' height='30'> | [Pritesh-30](https://github.com/Pritesh-30) | 4 |
-| 4 | 🥉 | <img src='https://avatars.githubusercontent.com/u/105038790?v=4' alt='Avatar' width='30' height='30'> | [Algebra101](https://github.com/Algebra101) | 2 |
-| 5 | 🥉 | <img src='https://avatars.githubusercontent.com/u/88575926?v=4' alt='Avatar' width='30' height='30'> | [GboyeStack-Robotics-ML-Engineer](https://github.com/GboyeStack-Robotics-ML-Engineer) | 2 |
-| 6 | 🥉 | <img src='https://avatars.githubusercontent.com/u/114394219?v=4' alt='Avatar' width='30' height='30'> | [ishanpeshkar](https://github.com/ishanpeshkar) | 2 |
-| 7 | 🥉 | <img src='https://avatars.githubusercontent.com/u/103088635?v=4' alt='Avatar' width='30' height='30'> | [KingDavid2908](https://github.com/KingDavid2908) | 2 |
-| 8 | 🥉 | <img src='https://avatars.githubusercontent.com/u/173927960?v=4' alt='Avatar' width='30' height='30'> | [Nishchal-29](https://github.com/Nishchal-29) | 2 |
-| 9 | 4 | <img src='https://avatars.githubusercontent.com/u/106073318?v=4' alt='Avatar' width='30' height='30'> | [Abdulbaasiterinkitola](https://github.com/Abdulbaasiterinkitola) | 1 |
-| 10 | 4 | <img src='https://avatars.githubusercontent.com/u/182611319?v=4' alt='Avatar' width='30' height='30'> | [aneeshsunganahalli](https://github.com/aneeshsunganahalli) | 1 |
+| 1 | 🥇 | <img src='https://avatars.githubusercontent.com/u/106810199?v=4' alt='Avatar' width='30' height='30'> | [Omoytom](https://github.com/Omoytom) | 6 |
+| 2 | 🥈 | <img src='https://avatars.githubusercontent.com/u/190011583?v=4' alt='Avatar' width='30' height='30'> | [Pritesh-30](https://github.com/Pritesh-30) | 5 |
+| 3 | 🥉 | <img src='https://avatars.githubusercontent.com/u/183400810?v=4' alt='Avatar' width='30' height='30'> | [Adi-3108](https://github.com/Adi-3108) | 4 |
+| 4 | 4 | <img src='https://avatars.githubusercontent.com/u/105038790?v=4' alt='Avatar' width='30' height='30'> | [Algebra101](https://github.com/Algebra101) | 2 |
+| 5 | 4 | <img src='https://avatars.githubusercontent.com/u/88575926?v=4' alt='Avatar' width='30' height='30'> | [GboyeStack-Robotics-ML-Engineer](https://github.com/GboyeStack-Robotics-ML-Engineer) | 2 |
+| 6 | 4 | <img src='https://avatars.githubusercontent.com/u/114394219?v=4' alt='Avatar' width='30' height='30'> | [ishanpeshkar](https://github.com/ishanpeshkar) | 2 |
+| 7 | 4 | <img src='https://avatars.githubusercontent.com/u/103088635?v=4' alt='Avatar' width='30' height='30'> | [KingDavid2908](https://github.com/KingDavid2908) | 2 |
+| 8 | 4 | <img src='https://avatars.githubusercontent.com/u/173927960?v=4' alt='Avatar' width='30' height='30'> | [Nishchal-29](https://github.com/Nishchal-29) | 2 |
+| 9 | 5 | <img src='https://avatars.githubusercontent.com/u/106073318?v=4' alt='Avatar' width='30' height='30'> | [Abdulbaasiterinkitola](https://github.com/Abdulbaasiterinkitola) | 1 |
+| 10 | 5 | <img src='https://avatars.githubusercontent.com/u/182611319?v=4' alt='Avatar' width='30' height='30'> | [aneeshsunganahalli](https://github.com/aneeshsunganahalli) | 1 |
 
 Thank you to all our fantastic contributors for their hard work and dedication!
 

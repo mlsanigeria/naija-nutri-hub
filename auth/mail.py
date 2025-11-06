@@ -39,7 +39,8 @@ def send_email_otp(receiver_email, otp_code, expiry_minutes=10, user_name="User"
         html_content = html_content.replace('{{expiry_minutes}}', str(expiry_minutes))
         html_content = html_content.replace('{{user_name}}', user_name)
         html_content = html_content.replace('{{app_name}}', 'Naija Nutri Hub')
-        html_content = html_content.replace('{{support_email}}', ADMIN_EMAIL or 'support@naijanutri.com')
+        # html_content = html_content.replace('{{support_email}}', ADMIN_EMAIL or 'support@naijanutri.com')
+        html_content = html_content.replace('{{support_email}}', 'support@naijanutri.com')
 
         # Send email using Azure Communication Email
         client = EmailClient.from_connection_string(ADMIN_EMAIL_CONNECTION_STRING)
@@ -87,8 +88,9 @@ def send_email_welcome(user_name, receiver, attachment=False):
     body = {
         "user_name": user_name,
         "app_name": "Naija Nutri Hub",
-        "dashboard_url": "https://naijanutri.com/",
-        "support_email": ADMIN_EMAIL
+        "dashboard_url": "https://naija-nutri-hub-frontend.vercel.app/",
+        # "support_email": ADMIN_EMAIL
+        "support_email": "support@naijanutrihub.com"
     }
     try:
         # --- Load HTML Template ---
@@ -131,4 +133,67 @@ def send_email_welcome(user_name, receiver, attachment=False):
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
+def send_email_reset_password_success(user_firstname, receiver):
+    """
+    Sends a Password Reset Success email using the reset_password_success.html template.
     
+    Args:
+        user_firstname (str): The user's first name to personalize the email.
+        receiver (str): The recipient's email address.
+    
+    Returns:
+        dict: Status and message of the operation.
+    """
+    subject = "🔒 Your Password Has Been Reset Successfully!"
+    body = {
+        "user_firstname": user_firstname,
+        "app_name": "Naija Nutri Hub",
+        "login_url": "https://naija-nutri-hub-frontend.vercel.app/login",
+        # "support_email": ADMIN_EMAIL or "support@naijanutrihub.com"
+        "support_email": "support@naijanutrihub.com"
+
+    }
+
+    try:
+        # --- Load HTML Template ---
+        template_path = Path(__file__).parent / "html_email_themes" / "reset_password_success.html"
+        with open(template_path, "r", encoding="utf-8") as f:
+            html_template = f.read()
+
+        # Replace placeholders
+        html_content = (
+            html_template
+            .replace("{{user_firstname}}", body.get("user_firstname", "User"))
+            .replace("{{app_name}}", body.get("app_name", "Naija Nutri Hub"))
+            .replace("{{login_url}}", body.get("login_url", "#"))
+            .replace("{{support_email}}", body.get("support_email", ADMIN_EMAIL))
+        )
+
+        # --- Send Email using Azure Communication Email ---
+        client = EmailClient.from_connection_string(ADMIN_EMAIL_CONNECTION_STRING)
+        message = {
+            "senderAddress": ADMIN_EMAIL,
+            "recipients": {"to": [{"address": receiver}]},
+            "content": {
+                "subject": subject,
+                "html": html_content,
+                "plainText": (
+                    f"Hi {user_firstname}, your password has been successfully reset. "
+                    "You can now log in with your new password."
+                ),
+            },
+        }
+
+        poller = client.begin_send(message)
+        result = poller.result()
+        status = result["status"]
+
+        if status != "Succeeded":
+            return {"status": "error", "message": f"Failed to send reset email. Status: {status}"}
+
+        return {"status": "success", "message": f"Password reset email sent to {receiver}"}
+
+    except FileNotFoundError:
+        return {"status": "error", "message": "reset_password_success.html template not found."}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}

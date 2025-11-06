@@ -38,6 +38,6 @@ if __name__ == "__main__":
     with open(image_path, "rb") as f:
         image = f.read()
     result = classify_image(image)
-    #print(json.dumps(result, indent=4))
+    print(json.dumps(result, indent=4))
 
 
