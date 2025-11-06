@@ -14,13 +14,16 @@ from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from fastapi.responses import Response
 from bson import ObjectId
 from auth.service import resend_otp_service
-from auth.mail import send_email_otp, send_email_welcome
 from pydantic import BaseModel, EmailStr as PydanticEmailStr, ValidationError
 from pymongo import MongoClient
 from bson.binary import Binary
 
 # Authentication
-from auth.mail import send_email_otp
+from auth.mail import (
+    send_email_otp,
+    send_email_welcome,
+    send_email_reset_password_success,
+) 
 from auth.service import (
     create_user,
     generate_otp,
@@ -158,7 +161,8 @@ def sign_up_user(user_data: UserCreate):
         )
         
         # Check if email sending failed
-        if not email_result.get("success", False):
+        # Check if dictionary in result {status} is "success"
+        if email_result.get("status") != "success":
             # Rollback: delete the OTP record if email fails
             otp_record.delete_one({"email": user_data.email})
             raise HTTPException(
@@ -389,6 +393,18 @@ def reset_password(req: ResetPasswordRequest):
         {"email": req.email},
         {"$set": {"password_hash": hashed_password, "updated_at": datetime.now(timezone.utc)}}
     )
+        
+    email_result = send_email_reset_password_success(
+        user_firstname=user["firstname"],
+        receiver=user["email"]
+    )
+
+    # Check if email sending failed
+    if email_result.get("status") != "success":
+        raise HTTPException(
+            status_code=500, 
+            detail=f"Password reset successful but failed to send email: {email_result.get('message', 'Unknown error')}"
+        )
 
     otp_record.delete_one({"email": req.email})
     return {"message": "Password reset successfully"}

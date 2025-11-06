@@ -39,7 +39,8 @@ def send_email_otp(receiver_email, otp_code, expiry_minutes=10, user_name="User"
         html_content = html_content.replace('{{expiry_minutes}}', str(expiry_minutes))
         html_content = html_content.replace('{{user_name}}', user_name)
         html_content = html_content.replace('{{app_name}}', 'Naija Nutri Hub')
-        html_content = html_content.replace('{{support_email}}', ADMIN_EMAIL or 'support@naijanutri.com')
+        # html_content = html_content.replace('{{support_email}}', ADMIN_EMAIL or 'support@naijanutri.com')
+        html_content = html_content.replace('{{support_email}}', 'support@naijanutri.com')
 
         # Send email using Azure Communication Email
         client = EmailClient.from_connection_string(ADMIN_EMAIL_CONNECTION_STRING)
@@ -87,8 +88,9 @@ def send_email_welcome(user_name, receiver, attachment=False):
     body = {
         "user_name": user_name,
         "app_name": "Naija Nutri Hub",
-        "dashboard_url": "https://naijanutri.com/",
-        "support_email": ADMIN_EMAIL
+        "dashboard_url": "https://naija-nutri-hub-frontend.vercel.app/",
+        # "support_email": ADMIN_EMAIL
+        "support_email": "support@naijanutrihub.com"
     }
     try:
         # --- Load HTML Template ---
@@ -146,8 +148,10 @@ def send_email_reset_password_success(user_firstname, receiver):
     body = {
         "user_firstname": user_firstname,
         "app_name": "Naija Nutri Hub",
-        "login_url": "https://naijanutrihub.com/login",
-        "support_email": ADMIN_EMAIL or "support@naijanutrihub.com"
+        "login_url": "https://naija-nutri-hub-frontend.vercel.app/login",
+        # "support_email": ADMIN_EMAIL or "support@naijanutrihub.com"
+        "support_email": "support@naijanutrihub.com"
+
     }
 
     try:
@@ -193,5 +197,3 @@ def send_email_reset_password_success(user_firstname, receiver):
         return {"status": "error", "message": "reset_password_success.html template not found."}
     except Exception as e:
         return {"status": "error", "message": str(e)}
-
-    
