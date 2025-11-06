@@ -1,4 +1,4 @@
-from classifier_tools import classify_food_image, enrich_food_info, classify_and_enrich
+from .classifier_tools import classify_food_image, enrich_food_info, classify_and_enrich
 from PIL import Image
 import os
 import json

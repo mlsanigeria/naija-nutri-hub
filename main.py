@@ -57,6 +57,9 @@ from config.database import otp_record, user_auth
 
 from config.database import classification_requests, recipe_requests, nutrition_requests, purchase_loc_requests
 
+# Import the food classification function
+from src.food_classifier.image_classification import classify_image
+
 # Import the nutritional facts extraction function
 from src.nutritional_facts.nutritional_facts import get_structured_nutrition
 
@@ -465,7 +468,10 @@ async def food_classification(image: UploadFile = File(...), current_user: dict 
         raise HTTPException(status_code=400, detail=str(ve))
 
     # Main Implementation (with function calls)
-    
+    try:
+        classification_result = classify_image(payload.image)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Image classification failed: {e}")
 
     # Store request in DB
     try:
@@ -478,7 +484,16 @@ async def food_classification(image: UploadFile = File(...), current_user: dict 
 
         result = classification_requests.insert_one(doc)
 
-        return {"status": "success", "inserted_id": str(result.inserted_id)}
+        # return {"status": "success", "inserted_id": str(result.inserted_id)}
+        return {
+            "message": "Image classified successfully.",
+            "classification_result": classification_result,
+            "request_metadata": {
+                "timestamp": payload.timestamp.isoformat() if "timestamp" in payload.model_dump() else None,
+                "user_email": user_email,
+                "request_id": str(result.inserted_id),
+            },
+        }
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to save request to database: {e}")

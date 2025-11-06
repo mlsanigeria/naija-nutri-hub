@@ -127,41 +127,92 @@ def classify_food_image(image):
 
 
 # TF-IDF Matching 
-def get_closest_food_tfidf(query, dataset_path="data/Nigerian Foods.csv", min_fuzzy_score=50):
-    df = pd.read_csv(dataset_path)
-    food_names = df["Food_Name"].astype(str).tolist()
+# def get_closest_food_tfidf(query, dataset_path="data/Nigerian Foods.csv", min_fuzzy_score=50):
+#     df = pd.read_csv(dataset_path)
+#     food_names = df["Food_Name"].astype(str).tolist()
 
-    # --- TF-IDF similarity ---
+#     # --- TF-IDF similarity ---
+#     vectorizer = TfidfVectorizer(stop_words="english")
+#     tfidf_matrix = vectorizer.fit_transform(food_names)
+#     query_vec = vectorizer.transform([query])
+#     cosine_sim = cosine_similarity(query_vec, tfidf_matrix).flatten()
+
+#     best_idx = cosine_sim.argmax()
+#     best_food = food_names[best_idx]
+#     best_score = cosine_sim[best_idx]
+
+#     # --- Fuzzy token-based matching ---
+#     fuzzy_scores = {name: fuzz.token_set_ratio(query.lower(), name.lower()) for name in food_names}
+#     best_fuzzy_food = max(fuzzy_scores, key=fuzzy_scores.get)
+#     best_fuzzy_score = fuzzy_scores[best_fuzzy_food]
+
+#     # --- Select best match ---
+#     if best_fuzzy_score >= min_fuzzy_score or best_score > 0.2:
+#         matched = best_fuzzy_food if best_fuzzy_score >= min_fuzzy_score else best_food
+#         print(f"🔍 Matched '{query}' → '{matched}' (Fuzzy={best_fuzzy_score:.2f}, TF-IDF={best_score:.2f})")
+#     else:
+#         print(f" No strong match for '{query}' (TF-IDF={best_score:.2f}, Fuzzy={best_fuzzy_score:.2f})")
+#         return None
+
+#     # --- Return only the selected columns ---
+#     # row = df[df["Food_Name"].str.lower() == matched.lower()].iloc[0]
+#     # Convert to list of dicts in case of multiple matches
+#     rows = df[df["Food_Name"].str.lower() == matched.lower()]
+#     return {
+#         "food_name": row["Food_Name"],
+#         "description": row["Description"],
+#         "spice_level": row["Spice_Level"],
+#         "main_ingredients": row["Main_Ingredients"],
+#         "origin": row["Region"]
+#     }
+
+def get_closest_food_tfidf(food_name: str, dataset_path="data/Nigerian Foods.csv", top_k: int = 3):
+    food_df = pd.read_csv(dataset_path)
+    if food_df is None or "Food_Name" not in food_df.columns:
+        return []
+
+    food_names = food_df["Food_Name"].astype(str).tolist()
+    descriptions = (
+        food_df["Description"].astype(str).tolist()
+        if "Description" in food_df.columns
+        else [""] * len(food_names)
+    )
+    combined_texts = [f"{n} {d}" for n, d in zip(food_names, descriptions)]
+
     vectorizer = TfidfVectorizer(stop_words="english")
-    tfidf_matrix = vectorizer.fit_transform(food_names)
-    query_vec = vectorizer.transform([query])
-    cosine_sim = cosine_similarity(query_vec, tfidf_matrix).flatten()
-
-    best_idx = cosine_sim.argmax()
-    best_food = food_names[best_idx]
-    best_score = cosine_sim[best_idx]
+    tfidf_matrix = vectorizer.fit_transform(combined_texts)
+    query_vec = vectorizer.transform([food_name])
+    similarities = cosine_similarity(query_vec, tfidf_matrix).flatten()
+    top_indices_tfidf = similarities.argsort()[-top_k:][::-1]
 
     # --- Fuzzy token-based matching ---
-    fuzzy_scores = {name: fuzz.token_set_ratio(query.lower(), name.lower()) for name in food_names}
-    best_fuzzy_food = max(fuzzy_scores, key=fuzzy_scores.get)
-    best_fuzzy_score = fuzzy_scores[best_fuzzy_food]
+    fuzzy_scores = {name: fuzz.token_set_ratio(food_name.lower(), name.lower()) for name in food_names}
+    # Get top k fuzzy matches
+    top_fuzzy_foods = sorted(fuzzy_scores, key=fuzzy_scores.get, reverse=True)[:top_k]
+    # best_fuzzy_food = max(fuzzy_scores, key=fuzzy_scores.get)
+    best_fuzzy_score = fuzzy_scores[top_fuzzy_foods[0]]
+    top_indices_fuzzy = [food_names.index(name) for name in top_fuzzy_foods]
 
-    # --- Select best match ---
-    if best_fuzzy_score >= min_fuzzy_score or best_score > 0.2:
-        matched = best_fuzzy_food if best_fuzzy_score >= min_fuzzy_score else best_food
-        print(f"🔍 Matched '{query}' → '{matched}' (Fuzzy={best_fuzzy_score:.2f}, TF-IDF={best_score:.2f})")
-    else:
-        print(f" No strong match for '{query}' (TF-IDF={best_score:.2f}, Fuzzy={best_fuzzy_score:.2f})")
-        return None
+    if similarities[top_indices_tfidf[0]] < 0.2:
+        top_indices_tfidf = []
+    elif best_fuzzy_score < 50:
+        top_indices_fuzzy = []
 
-    # --- Return only the selected columns ---
-    row = df[df["Food_Name"].str.lower() == matched.lower()].iloc[0]
-    return {
-        "food_name": row["Food_Name"],
-        "description": row["Description"],
-        "spice_level": row["Spice_Level"],
-        "main_ingredients": row["Main_Ingredients"],
-    }
+    results = []
+    # Create a set to avoid duplicates
+    seen_indices = set()
+    # Add results from both methods (top_indices_tfidf and top_indices_fuzzy)
+
+    for idx in seen_indices.union(top_indices_tfidf).union(top_indices_fuzzy):
+        row = food_df.iloc[idx]
+        results.append({
+            "food_name": row["Food_Name"],
+            "description": row["Description"],
+            "spice_level": row["Spice_Level"],
+            "main_ingredients": row["Main_Ingredients"],
+            "origin": row["Region"]
+        })
+    return results
 
 
 def load_food_dataset(path: str = "./data/Nigerian Foods.csv"):
@@ -214,7 +265,7 @@ def load_food_dataset(path: str = "./data/Nigerian Foods.csv"):
 # Azure OpenAI Enrichment
 
 
-def enrich_food_info(food_name, dataset):
+def enrich_food_info(food_name, dataset_context):
     """
     Enriches food information using dataset context first,
     and Azure OpenAI fallback if not found in dataset.
@@ -230,31 +281,38 @@ def enrich_food_info(food_name, dataset):
             }
 
     #  Attempt to find food info in dataset
-    matched_record = None
-    if isinstance(dataset, list):
-        matched_record = next(
-            (item for item in dataset if item.get("name", "").strip().lower() == food_name.strip().lower()),
-            None
-        )
-    elif hasattr(dataset, "iterrows"):  # Handle pandas DataFrame
-        for _, row in dataset.iterrows():
-            if str(row.get("name", "")).strip().lower() == food_name.strip().lower():
-                matched_record = row.to_dict()
-                break
+    # matched_record = None
+    # if isinstance(dataset, list):
+    #     matched_record = next(
+    #         (item for item in dataset if item.get("name", "").strip().lower() == food_name.strip().lower()),
+    #         None
+    #     )
+    # elif hasattr(dataset, "iterrows"):  # Handle pandas DataFrame
+    #     for _, row in dataset.iterrows():
+    #         if str(row.get("name", "")).strip().lower() == food_name.strip().lower():
+    #             matched_record = row.to_dict()
+    #             break
 
-    #  If found in dataset, return enriched info directly
-    if matched_record:
-        return {
-            "food_name": food_name,
-            "description": matched_record.get("description", "No description available."),
-            "origin": matched_record.get("origin", "Nigeria"),
-            "spice_level": matched_record.get("spice_level", "Medium"),
-            "main_ingredients": matched_record.get("main_ingredients", []),
-        }
+    # #  If found in dataset, return enriched info directly
+    # if matched_record:
+    #     return {
+    #         "food_name": food_name,
+    #         "description": matched_record.get("description", "No description available."),
+    #         "origin": matched_record.get("origin", "Nigeria"),
+    #         "spice_level": matched_record.get("spice_level", "Medium"),
+    #         "main_ingredients": matched_record.get("main_ingredients", []),
+    #     }
 
     #  Otherwise, use Azure OpenAI for enrichment
     prompts = load_prompts()
     enrichment_prompt = prompts["enrichment_prompt"].replace("{{food_name}}", food_name)
+    # Replace context if available
+    if dataset_context:
+        # Append string to the enrichment prompt
+        print(dataset_context)
+        enrichment_prompt += f"\n\nBelow is some contextual information about the dish:\n\n{dataset_context}"
+        # enrichment_prompt = enrichment_prompt.replace("{{context}}", dataset_context)
+
 
     client = AzureOpenAI(
         azure_endpoint=os.getenv("AZURE_OPENAI_BASE_URL", ""),
@@ -437,12 +495,16 @@ def classify_and_enrich(img_bytes: bytes) -> dict:
         # Try to get dataset grounding for the uncertain food
         tfidf_context = get_closest_food_tfidf(food_name)
 
-        grounding = (
-            f"The most similar food in the dataset is {tfidf_context['food_name']}. "
-            f"Description: {tfidf_context['description']}. "
-            f"Ingredients: {tfidf_context['main_ingredients']}. "
-            f"Spice Level: {tfidf_context['spice_level']}."
-        ) if tfidf_context else "No similar food found in dataset."
+        # Grounding on list of similar foods
+        grounding = []
+
+        for item in tfidf_context:
+            grounding.append(
+                f"Description: {item['description']}. "
+                f"Ingredients: {item['main_ingredients']}. "
+                f"Spice Level: {item['spice_level']}."
+            )
+        grounding = "\n".join(grounding) if grounding else "No similar food found in dataset."
 
         genai_result = classify_food_genai(img_bytes, grounding_context=grounding)
         food_name = genai_result.get("food_name", food_name)
@@ -454,15 +516,15 @@ def classify_and_enrich(img_bytes: bytes) -> dict:
     else:
         tfidf_context = get_closest_food_tfidf(food_name)
 
-    # Step 3: Dataset grounding 
-    grounding_info = ""
-    if tfidf_context:
-        grounding_info = (
-            f"{tfidf_context['description']}. "
-        )
+    # # Step 3: Dataset grounding 
+    # grounding_info = ""
+    # if tfidf_context:
+    #     grounding_info = (
+    #         f"{tfidf_context['description']}. "
+    #     )
 
     # Step 4: Enrichment (dataset always passed)
-    enriched = enrich_food_info(food_name, dataset)
+    enriched = enrich_food_info(food_name, tfidf_context)
 
     # Step 5: Combine final result
     final_result = {
@@ -471,13 +533,13 @@ def classify_and_enrich(img_bytes: bytes) -> dict:
         
         "description": " ".join(filter(None, [
             enriched.get("description", "").strip(),
-            f"It is also a {tfidf_context['description'].strip()}" if tfidf_context and tfidf_context.get("description") else ""
+            # f"It is also a {tfidf_context['description'].strip()}" if tfidf_context and tfidf_context.get("description") else ""
         ])).strip(),
 
         
-        "origin": enriched.get("origin") or (tfidf_context.get("origin") if tfidf_context else "Nigeria"),
-        "spice_level": enriched.get("spice_level") or (tfidf_context.get("spice_level") if tfidf_context else "Unknown"),
-        "main_ingredients": enriched.get("main_ingredients") or (tfidf_context.get("main_ingredients") if tfidf_context else []),
+        "origin": enriched.get("origin"), # or (tfidf_context.get("origin") if tfidf_context else "Nigeria"),
+        "spice_level": enriched.get("spice_level"), # or (tfidf_context.get("spice_level") if tfidf_context else "Unknown"),
+        "main_ingredients": enriched.get("main_ingredients"), # or (tfidf_context.get("main_ingredients") if tfidf_context else []),
 
 
         "confidence": confidence,
