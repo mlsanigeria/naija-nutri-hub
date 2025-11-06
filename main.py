@@ -475,6 +475,12 @@ async def food_classification(image: UploadFile = File(...), current_user: dict 
 
     # Store request in DB
     try:
+        # Update last used record of user
+        user_auth.update_one(
+            {"email": user_email},
+            {"$set": {"last_used": datetime.utcnow()}}
+        )
+
         doc = {
             "email": str(payload.email),
             "image": Binary(payload.image),
@@ -538,6 +544,12 @@ async def recipe_generation(recipe_data: RecipePayload, current_user:dict = Depe
     request_document["user_email"] = current_user.get("email")
     request_document["generated_recipe"] = generated_recipe
 
+    # Update last used record of user
+    user_auth.update_one(
+        {"email": current_user.get("email")},
+        {"$set": {"last_used": datetime.utcnow()}}
+    )
+
     return {
         "message": "Recipe request stored successfully.",
         "food_name": recipe_data.food_name.strip(),
@@ -584,6 +596,12 @@ async def nutritional_estimates(nutrition_data: NutritionPayload, current_user:d
         user_email = current_user.get("email")
         current_timestamp = datetime.utcnow()
         
+        # Update last used record of user
+        user_auth.update_one(
+            {"email": user_email},
+            {"$set": {"last_used": datetime.utcnow()}}
+        )
+
         nutrition_record = {
             "email": user_email,
             "food_name": nutrition_data.food_name.strip(),
@@ -627,7 +645,13 @@ def purchase_locations(purchase_data: PurchasePayload, current_user:dict=Depends
     # Store request in DB
     try:
         user_email = current_user["email"]
-        current_timestamp = datetime.utcnow();
+        current_timestamp = datetime.utcnow()
+
+        # Update last used record of user
+        user_auth.update_one(
+            {"email": user_email},
+            {"$set": {"last_used": datetime.utcnow()}}
+        )
         
         purchase_record = {
            "email": user_email,
