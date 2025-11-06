@@ -18,6 +18,11 @@ from auth.mail import send_email_otp, send_email_welcome
 from pydantic import BaseModel, EmailStr as PydanticEmailStr, ValidationError
 from pymongo import MongoClient
 from bson.binary import Binary
+from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import JSONResponse
+from schemas.schema import ClassificationPayload, ClassificationResponse
+from src.food_classifier.image_classification import classify_image
+from utils.auth import jwt_required
 
 # Authentication
 from auth.mail import send_email_otp
@@ -449,7 +454,24 @@ async def food_classification(image: UploadFile = File(...), current_user: dict 
         raise HTTPException(status_code=400, detail=str(ve))
 
     # Main Implementation (with function calls)
-    
+router = APIRouter()
+
+@router.post("/classify", response_model=ClassificationResponse)
+@jwt_required
+def classify(payload: ClassificationPayload):
+    try:
+        # Extract binary image from payload
+        image_bytes = payload.image
+
+        #Pass image to classifier
+        result = classify_image(image_bytes)
+
+        #Return structured response
+        return JSONResponse(content=result)
+
+    except Exception as e:
+        #Handle errors gracefully
+        raise HTTPException(status_code=500, detail=f"Classification failed: {str(e)}") 
 
     # Store request in DB
     try:

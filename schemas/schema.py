@@ -74,3 +74,19 @@ class PurchasePayload(BaseModel):
     location_query: Optional[str] = None            # e.g. "Surulere, Lagos"
     max_distance_km: Optional[float] = None
     timestamp: Optional[datetime] = Field(default_factory=datetime.utcnow)
+    
+class TopKItem(BaseModel):
+    label: str
+    confidence: float
+
+class ClassificationDetails(BaseModel):
+    top_k: List[TopKItem]
+    model_version: str
+
+class ClassificationResponse(BaseModel):
+    label: str
+    confidence: float
+    details: ClassificationDetails
+
+class ClassificationPayload(BaseModel):
+    image: bytes    
