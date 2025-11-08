@@ -452,7 +452,8 @@ async def food_classification(image: UploadFile = File(...), current_user: dict 
     try:
         img_bytes = await image.read()
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Failed to read uploaded image: {e}")
+        print(f"Error during image reading: {e}")
+        raise HTTPException(status_code=400, detail=f"Failed to read uploaded image.")
 
     if not img_bytes:
         raise HTTPException(status_code=400, detail="Empty image file")
@@ -471,7 +472,8 @@ async def food_classification(image: UploadFile = File(...), current_user: dict 
     try:
         classification_result = classify_image(payload.image)
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Image classification failed: {e}")
+        print(f"Error during image classification: {e}")
+        raise HTTPException(status_code=500, detail=f"Image classification failed.")
 
     # Store request in DB
     try:
