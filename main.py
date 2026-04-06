@@ -25,6 +25,7 @@ from auth.mail import (
     send_email_reset_password_success,
 ) 
 from auth.service import (
+    case_insensitive_query,
     create_user,
     generate_otp,
     get_user_via_email,
@@ -196,7 +197,7 @@ def verify_user_account(otp_data: OTPVerifyRequest):
     """ Verify user account using OTP and send welcome email """
 
     otp_rec = otp_record.find_one({
-        "email": otp_data.email,
+        **case_insensitive_query("email", otp_data.email),
         "otp": otp_data.otp
     })
     if not otp_rec:
@@ -360,7 +361,7 @@ def verify_reset_otp(otp_data: OTPVerifyRequest):
     Verifies the OTP sent for password reset.
     """
     otp_entry = otp_record.find_one({
-        "email": otp_data.email,
+        **case_insensitive_query("email", otp_data.email),
         "otp": otp_data.otp
     })
 
@@ -386,7 +387,7 @@ def reset_password(req: ResetPasswordRequest):
     Resets the user's password after successful OTP verification.
     """
 
-    user = user_auth.find_one({"email": req.email})
+    user = user_auth.find_one(case_insensitive_query("email", req.email))
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 

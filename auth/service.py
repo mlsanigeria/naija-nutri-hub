@@ -1,11 +1,18 @@
+import re
+import random
+import string
 from config.database import user_auth, otp_record
 from schemas.schema import User, UserCreate
 from datetime import datetime, timedelta, timezone
 from .utils import hash_password
 from fastapi import HTTPException
 from .mail import send_email_otp
-import random
-import string
+
+
+def case_insensitive_query(field: str, value: str) -> dict:
+    """Creates a case-insensitive regex query for MongoDB."""
+    escaped_value = re.escape(value)
+    return {field: {"$regex": f"^{escaped_value}$", "$options": "i"}}
 
 
 def user_serializer(user: dict) -> dict:
@@ -28,41 +35,35 @@ def user_serializer(user: dict) -> dict:
 
 
 def get_user_via_email(email: str):
-    """Fetches a user from the database by their email."""
-    user = user_auth.find_one({"email": email})
+    """Fetches a user from the database by their email (case-insensitive)."""
+    user = user_auth.find_one(case_insensitive_query("email", email))
     return user_serializer(user)
 
 
 def get_user_via_username(username: str):
-    """Fetches a user from the database by their username."""
-    user = user_auth.find_one({"username": username})
+    """Fetches a user from the database by their username (case-insensitive)."""
+    user = user_auth.find_one(case_insensitive_query("username", username))
     return user_serializer(user)
 
 
 def user_exists_email(email: str) -> bool:
     """
-    Check if a user with the given email already exists in the user_auth collection.
+    Check if a user with the given email already exists in the user_auth collection (case-insensitive).
     
     :param email: The email address to check.
     :return: True if the user exists, False otherwise.
     """
-    # Use count_documents() for an efficient check on the database.
-    return user_auth.count_documents({"email": email}) > 0
-    """Checks if a user with the given email already exists."""
-    return user_auth.count_documents({"email": email}) > 0
+    return user_auth.count_documents(case_insensitive_query("email", email)) > 0
 
 
 def user_exists_username(username: str) -> bool:
     """
-    Check if a user with the given username already exists in the user_auth collection.
+    Check if a user with the given username already exists in the user_auth collection (case-insensitive).
     
     :param username: The username to check.
     :return: True if the user exists, False otherwise.
     """
-    # Use count_documents() for an efficient check on the database.
-    return user_auth.count_documents({"username": username}) > 0
-    """Checks if a user with the given username already exists."""
-    return user_auth.count_documents({"username": username}) > 0
+    return user_auth.count_documents(case_insensitive_query("username", username)) > 0
 
 
 def create_user(user: UserCreate):
@@ -96,7 +97,7 @@ def resend_otp_service(email: str):
     """
     now = datetime.now(timezone.utc)
 
-    user = user_auth.find_one({"email": email})
+    user = user_auth.find_one(case_insensitive_query("email", email))
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
