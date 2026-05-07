@@ -164,9 +164,11 @@ def sign_up_user(user_data: UserCreate):
             user_name=user_name
         )
         
-        # Check if email sending failed
-        # Check if dictionary in result {status} is "success"
-        if email_result.get("status") != "success":
+        # Treat both `success=True` and `status="success"` as successful sends
+        if not (
+            email_result.get("success") is True
+            or email_result.get("status") == "success"
+        ):
             # Rollback: delete the OTP record if email fails
             otp_record.delete_one({"email": user_data.email})
             raise HTTPException(
@@ -378,7 +380,7 @@ def verify_reset_otp(otp_data: OTPVerifyRequest):
         raise HTTPException(status_code=400, detail="OTP expired. Please request a new one")
     
     # If valid, allow password reset
-    return HTTPException(status_code=200, detail="OTP verified successfully. You may now reset your password.")
+    return {"message": "OTP verified successfully. You may now reset your password."}
 
 
 @app.post("/reset_password", tags=["Authentication"])
@@ -394,8 +396,14 @@ def reset_password(req: ResetPasswordRequest):
     hashed_password = hash_password(req.new_password)
 
     user_auth.update_one(
-        {"email": req.email},
-        {"$set": {"password_hash": hashed_password, "updated_at": datetime.now(timezone.utc)}}
+        case_insensitive_query("email", req.email),
+        {
+            "$set": {
+                "password_hash": hashed_password,
+                "is_verified": True,
+                "updated_at": datetime.now(timezone.utc),
+            }
+        }
     )
         
     email_result = send_email_reset_password_success(
@@ -410,8 +418,11 @@ def reset_password(req: ResetPasswordRequest):
             detail=f"Password reset successful but failed to send email: {email_result.get('message', 'Unknown error')}"
         )
 
-    otp_record.delete_one({"email": req.email})
-    return {"message": "Password reset successfully"}
+    otp_record.delete_many(case_insensitive_query("email", req.email))
+    return {
+        "message": "Password reset successfully",
+        "account_verified": True,
+    }
 
 #  Image Retrieval Endpoint 
 @app.get("/features/food_classification/image/{request_id}", tags=["Features"])

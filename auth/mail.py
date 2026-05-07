@@ -25,6 +25,7 @@ def send_email_otp(receiver_email, otp_code, expiry_minutes=10, user_name="User"
     if not ADMIN_EMAIL or not ADMIN_EMAIL_CONNECTION_STRING:
         return {
             "success": False,
+            "status": "error",
             "message": "Email configuration missing. Please set ADMIN_EMAIL and ADMIN_EMAIL_CONNECTION_STRING in environment variables."
         }
 
@@ -63,14 +64,30 @@ def send_email_otp(receiver_email, otp_code, expiry_minutes=10, user_name="User"
         # print(result)
         status = result["status"]
         if status != "Succeeded":
-            return {"success": False, "message": f"Failed to send OTP email. Status: {status}"}
+            return {
+                "success": False,
+                "status": "error",
+                "message": f"Failed to send OTP email. Status: {status}",
+            }
 
-        return {"success": True, "message": f"OTP sent successfully to {receiver_email}"}
+        return {
+            "success": True,
+            "status": "success",
+            "message": f"OTP sent successfully to {receiver_email}",
+        }
 
     except FileNotFoundError:
-        return {"success": False, "message": "Email template not found"}
+        return {
+            "success": False,
+            "status": "error",
+            "message": "Email template not found",
+        }
     except Exception as e:
-        return {"success": False, "message": f"Error sending OTP: {str(e)}"}
+        return {
+            "success": False,
+            "status": "error",
+            "message": f"Error sending OTP: {str(e)}",
+        }
 
 
 def send_email_welcome(user_name, receiver, attachment=False):
