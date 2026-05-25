@@ -211,7 +211,7 @@ def verify_user_account(otp_data: OTPVerifyRequest):
         otp_record.delete_one({"email": otp_rec["email"]})
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="OTP has expired. Please request a new one")
 
-    user = user_auth.find_one({"email": otp_rec["email"]})
+    user = get_user_via_email(otp_rec["email"])
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
 
@@ -222,7 +222,7 @@ def verify_user_account(otp_data: OTPVerifyRequest):
     set_verified = False
     try:
         # Mark verified
-        user_auth.update_one({"email": user["email"]}, {
+        user_auth.update_one({"_id": ObjectId(user["id"])}, {
             "$set": {"is_verified": True, "updated_at": datetime.now(timezone.utc)}
         })
         set_verified = True
@@ -234,7 +234,7 @@ def verify_user_account(otp_data: OTPVerifyRequest):
         ok = isinstance(send_result, dict) and send_result.get("status") == "success"
         if not ok:
             # Rollback verification and keep OTP so user can retry
-            user_auth.update_one({"email": user["email"]}, {
+            user_auth.update_one({"_id": ObjectId(user["id"])}, {
                 "$set": {"is_verified": False, "updated_at": datetime.now(timezone.utc)}
             })
             err_msg = (send_result or {}).get("message", "Failed to send welcome email")
@@ -248,7 +248,7 @@ def verify_user_account(otp_data: OTPVerifyRequest):
         raise
     except Exception as e:
         if set_verified:
-            user_auth.update_one({"email": user["email"]}, {
+            user_auth.update_one({"_id": ObjectId(user["id"])}, {
                 "$set": {"is_verified": False, "updated_at": datetime.now(timezone.utc)}
             })
         raise HTTPException(status_code=500, detail=f"Unexpected error during verification email: {str(e)}")
@@ -283,7 +283,11 @@ def login_user(form_data: OAuth2PasswordRequestForm = Depends()):
     if not user.get("is_verified", False):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Account not verified. Please verify your account before logging in.",
+            detail={
+                "code": "ACCOUNT_NOT_VERIFIED",
+                "message": "Account not verified. Please verify your account before logging in.",
+                "email": user["email"],
+            },
         )
 
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)

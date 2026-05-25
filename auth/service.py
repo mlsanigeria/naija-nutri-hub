@@ -101,7 +101,12 @@ def resend_otp_service(email: str):
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    last_otp = otp_record.find_one({"email": email}, sort=[("created_at", -1)])
+    canonical_email = user["email"]
+
+    last_otp = otp_record.find_one(
+        case_insensitive_query("email", canonical_email),
+        sort=[("created_at", -1)],
+    )
     if last_otp:
         created_at = last_otp["created_at"]
         if created_at.tzinfo is None:
@@ -109,11 +114,11 @@ def resend_otp_service(email: str):
         if (now - created_at) < timedelta(seconds=60):
             raise HTTPException(status_code=429, detail="Please wait before requesting another OTP")
 
-    otp_record.delete_many({"email": email})
+    otp_record.delete_many(case_insensitive_query("email", canonical_email))
 
     otp_code = generate_otp()
     otp_data = {
-        "email": email,
+        "email": canonical_email,
         "otp": otp_code,
         "created_at": now,
     }
@@ -124,10 +129,10 @@ def resend_otp_service(email: str):
 
     # Send OTP email using the template
     send_email_otp(
-        receiver_email=email,
+        receiver_email=canonical_email,
         otp_code=otp_code,
         expiry_minutes=5,
         user_name=user_name
     )
 
-    return {"message": "OTP resent successfully", "email": email}
+    return {"message": "OTP resent successfully", "email": canonical_email}
